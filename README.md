@@ -4,7 +4,7 @@ A configurable design system for native Filament panels, forms, tables, navigati
 
 **Commercial software — a paid license is required.** Choose Single for one production domain or Unlimited for unlimited production domains owned and operated by one license holder. Both include the complete package and one year of updates, with continued use of eligible versions after expiry. See [licensing](COMMERCIAL.md) and the [full license](LICENSE).
 
-[Buy a license](https://shop.bjanczak.com/checkout/buy/2fa1e181-74d4-4889-994c-d066dcfc88b3) · [License terms](LICENSE) · [Report an issue](https://github.com/janczakb/filament-flex-theme/issues)
+[Buy a license](https://shop.bjanczak.com/checkout/custom/88ee2f3a-e341-43d7-8b29-e47f0ca14862?signature=d472210ffbf92bd7ba06aea2a027192261775c6edad56b3d2594b8f29360f0d1) · [License terms](LICENSE) · [Report an issue](https://github.com/janczakb/filament-flex-theme/issues)
 
 This public repository contains documentation and legal information. Implementation code and releases are distributed through the protected package service, backed by a private repository. This repository is not a free implementation or an open-source grant.
 
