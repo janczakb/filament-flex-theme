@@ -1,0 +1,417 @@
+FLEX THEME — COMMERCIAL SOFTWARE LICENSE
+Version 1.0 · Effective 20 October 2026
+Package: flex/theme
+
+Copyright (c) 2026 Bartłomiej Janczak. All rights reserved.
+Licensor: Bartłomiej Janczak
+Contact: barek122@gmail.com
+
+FLEX Theme is proprietary commercial software. There is no free edition or
+general free-use grant. Public documentation and access to source code do not
+grant a license to install or use the package. A purchase is required even for
+personal, internal, educational, non-profit, development or evaluation use,
+unless the Licensor expressly grants a separate written authorization.
+
+This License governs the Licensor's original materials. It does not take away
+rights granted independently by third parties or rights that mandatory law
+does not permit the parties to exclude. See Sections 8 and 12.
+
+1. DEFINITIONS AND SCOPE
+
+1.1 Software means the original PHP, Blade, CSS, JavaScript, configuration,
+    designs, assets and accompanying materials distributed as FLEX Theme,
+    including modified copies and original package code incorporated into
+    another work. Independently authored application code and user data are
+    not owned by the Licensor merely because they integrate with the Software.
+    Filament, Laravel, FLEX Fields, FLEX Forms, icons and other third-party
+    packages are separate products governed by their respective terms.
+
+1.2 You / Licensee means the one natural person or one legal entity identified
+    in the accepted order. A company is distinct from its employees, owners,
+    clients, parent, subsidiaries, affiliates and other companies. Common
+    ownership, a shared developer, invoice or server does not combine licensees.
+    An authorized purchaser may accept this License on that entity's behalf.
+
+1.3 Order means a completed purchase through the Licensor's official checkout
+    or an expressly accepted written agreement identifying the Licensee, plan,
+    applicable License version and paid scope. The official Lemon Squeezy order
+    confirmation and associated license key are sufficient purchase evidence;
+    a separate registration, negotiated agreement or manual approval is not
+    required for a standard purchase. A license key is a credential and evidence
+    of the Order, not a bearer instrument transferable to whoever possesses it.
+
+1.4 Production Domain means one normalized hostname at which the licensed
+    application is made available for real operations, including staff-only,
+    customer, tenant, free-tier or paid-pilot operations. Case, scheme, port,
+    path, query string, trailing dot and an optional leading www. do not create
+    separate domains. Other hostnames and subdomains count separately. Thus
+    example.com and www.example.com are one domain; admin.example.com,
+    app.example.com and example.org are three. Multiple native Filament panels
+    and paths within one licensed application at the same hostname do not use
+    extra domain slots. Hosting unrelated applications behind one hostname,
+    proxy or gateway does not make them one licensed application.
+
+1.5 Production includes actual business operations regardless of the hostname,
+    privacy, access restrictions, revenue, user count or an environment's name.
+    A live installation does not become development by naming it staging,
+    localhost, demo, preview or test, or by hiding it behind authentication.
+
+1.6 Authorized Personnel means employees and contractors, including an agency
+    or hosting/build provider, accessing the Software solely to work on the
+    Licensee's permitted applications. They must protect copies and credentials
+    against unauthorized reuse and disclosure and receive no independent
+    license for themselves, their other clients or unrelated applications.
+    The Licensee is responsible for the access it authorizes.
+
+1.7 Browser Assets means the HTML, CSS, JavaScript, fonts and other resources
+    ordinarily delivered to browsers to operate a licensed application. Runtime
+    Access means using that application's interface without receiving reusable
+    package source, server files, deployment artifacts or independent rights
+    to install, copy, operate or distribute the Software.
+
+1.8 Official Channels means the Licensor's protected package service and other
+    expressly authorized delivery channels. The public repository
+    github.com/janczakb/filament-flex-theme contains documentation and legal
+    materials; the implementation is distributed from the private package
+    repository through the protected service. Another customer's vendor folder,
+    shared key, leaked archive, mirror or purchased third-party copy is not an
+    Official Channel and does not establish a license.
+
+2. LICENSE FORMATION — PAYMENT REQUIRED
+
+2.1 On acceptance of this License and confirmation of full payment for the
+    selected plan, the Licensor grants a worldwide, non-exclusive right to
+    install, execute, display, privately modify and integrate eligible versions
+    of the Software solely within that plan's scope. This grant is personal to
+    the Licensee, non-sublicensable and non-transferable except where Section 6
+    or mandatory applicable law expressly permits otherwise.
+
+2.2 No installation, use, copying, adaptation or distribution permission is
+    granted to an unlicensed person merely because the package can technically
+    be obtained, Composer succeeds, a key is shared, or validation is absent,
+    disabled, unavailable or circumvented. Possession of code is not permission.
+    Unauthorized use is outside this grant and may infringe copyright and/or
+    contractual rights; remedies and any finding of liability follow applicable
+    law. This License does not declare every unauthorized act a criminal offence
+    or create penalties unavailable under law.
+
+2.3 No free internal-use, personal-use, student, open-source-project, evaluation,
+    agency or non-profit exception is created by this License. Development,
+    evaluation and non-production copies are included only for a paid Licensee
+    under Section 4 or under a separate written permission from the Licensor.
+    Viewing public documentation does not require purchasing the package.
+
+2.4 Standard checkout purchases take effect automatically; a customer is not
+    required to request permission by email after paying. Prices, currency,
+    taxes, plan and update period are disclosed at checkout. Future price or
+    website changes do not create a balance due on an accepted paid Order.
+    Lemon Squeezy's payment terms govern its payment-processing and merchant-
+    of-record role; this License governs rights to the Software.
+
+3. PLANS — IDENTICAL FEATURES, DIFFERENT DOMAIN ALLOWANCES
+
+3.1 SINGLE grants one Licensee use in one identified application at one
+    Production Domain at a time. Additional application identities or production
+    hostnames require additional Single licenses or an Unlimited license.
+    A Single license is not an agency-wide or client-pool license.
+
+3.2 UNLIMITED grants one Licensee use in any number of applications and at any
+    number of Production Domains for that Licensee's own operations and hosted
+    services. It does not license separate companies or independently owned
+    client applications, even when the same agency builds or maintains them.
+    Authorized Personnel may assist the Licensee under Section 1.6. Unlimited
+    does not mean unlimited redistribution, sublicensing, OEM or resale rights.
+
+3.3 Both plans include the same Software features. Neither imposes a separate
+    developer-seat, end-user, server, CPU or revenue limit within its licensed
+    scope. Multiple servers, replicas and regions for a permitted deployment do
+    not consume additional domain slots. Production tenant/custom hostnames
+    follow the same domain rule; a tenant is not an independent package licensee.
+
+3.4 The Licensee may provide paid or unpaid Runtime Access to its own licensed
+    hosted application. Its users receive no right to download the package,
+    reuse its code, independently operate the application or sublicense it.
+    White-label application branding is allowed; relabeling or reselling FLEX
+    Theme itself, and transferring independent reseller/OEM rights, are not.
+
+3.5 A genuine domain migration may replace the registered hostname for the
+    same application. Remove or deactivate the old production use before the
+    new one becomes independently operational; a short technical cutover is
+    allowed solely to migrate that application. Deactivation does not authorize
+    rotating a Single key among concurrently operating sites or unrelated apps.
+    The portal's activation rules remain applicable; if an expired key cannot
+    be reassigned automatically, contact the Licensor for a same-application
+    migration. There is no promise of perpetual activation infrastructure.
+
+4. DEVELOPMENT, MODIFICATIONS AND PERMITTED COPIES
+
+4.1 For the Licensee's licensed applications, reasonable private development,
+    testing, staging, QA, CI, preview, disaster-recovery and backup copies are
+    included. They must not serve actual production operations or confer
+    independent use on another person. They do not expand production scope.
+    A separate license is not charged merely for a Composer download, CI run,
+    developer machine, container or build of an otherwise licensed application.
+
+4.2 You may inspect and privately modify the Software to integrate, maintain,
+    secure and operate permitted applications. Keep copyright, license and
+    third-party notices in copies. You need not display a public FLEX badge.
+    Modifications do not enlarge your grant or authorize code publication,
+    independent distributions or a replacement theme/toolkit business.
+
+4.3 Private repositories, forks, internal Composer caches, build/deployment
+    artifacts, containers, backups and copies shared with Authorized Personnel
+    are permitted only within this grant, with appropriate access restrictions.
+    Serve Browser Assets through the application's ordinary delivery and CDN
+    infrastructure as needed. These exceptions do not permit an asset library,
+    source download, reusable theme bundle, mirror or SDK for independent reuse.
+
+4.4 You retain ownership of independently written application code and data.
+    You may sell your labor, integration and maintenance services, but may not
+    sell or lend the underlying package license except as expressly authorized.
+    No grant to any unrelated FLEX product or third-party service is implied.
+
+5. KEEP YOUR LICENSED VERSIONS; UPDATE ACCESS LASTS ONE YEAR
+
+5.1 The paid usage grant is perpetual for eligible versions within its scope,
+    subject to compliance and Section 10. You are not required to renew merely
+    to continue using those versions. Expiry of an update period or a temporary
+    or permanent license-server outage does not itself terminate this grant.
+    A technical expiry date on a key identifies the update-access cutoff; it
+    does not convert lawful continued use into an annual rental obligation.
+
+5.2 A standard purchase includes one year of access to updates actually
+    published for this package during its update period, including major
+    versions if published within that period. The official order and provider
+    expiry timestamp identify the start and end of that period. Separate
+    products or add-ons are excluded. No minimum number or frequency of updates,
+    new features, fixes, framework upgrades or future releases is promised.
+
+5.3 After expiry, new releases published after the cutoff require renewed
+    update entitlement or a new purchase. Versions released on or before the
+    cutoff remain eligible for the paid usage grant and for re-download while
+    the protected distribution service operates, subject to legitimate access
+    checks. Do not infer an automatic extension of an old key from purchasing
+    a different key. A renewal's duration and effect must be disclosed in its
+    accepted order; ordinary one-time purchases do not automatically recur.
+
+5.4 Keep your own permitted copies and deployment backups. Update entitlement
+    is not an indefinite cloud-storage, archive-hosting, activation or support
+    subscription. You remain responsible for retaining the versions you need.
+    There is no promise to preserve every dependency, remote font, API, external
+    service or development environment indefinitely.
+
+5.5 PRODUCT LIFECYCLE. The Licensor may evolve, replace, discontinue or stop
+    maintaining the Software and may retire download, activation, update and
+    other hosted services. No obligation to operate the business, maintain
+    servers, publish updates or support old framework versions indefinitely is
+    created by a perpetual usage license. Such retirement does not revoke your
+    paid rights to eligible versions or prevent use of lawfully retained copies.
+
+5.6 For an orderly permanent retirement, the Licensor will give reasonable
+    advance notice where practicable, normally aiming for at least 30 days,
+    and a reasonable opportunity to obtain and retain available eligible
+    versions. Urgent legal, security or circumstances beyond reasonable control
+    may require shorter notice or immediate suspension. No notice can guarantee
+    the continued availability of services outside the Licensor's control.
+
+5.7 Retirement does not waive obligations already owed for an unexpired paid
+    access period. The Licensor will provide the available eligible versions
+    through a reasonable alternative delivery method where practicable. If a
+    separately owed paid service cannot be supplied, appropriate remedies,
+    including any proportionate refund required by the accepted order or
+    applicable law, remain available. This Section neither promises future
+    software development nor excludes non-waivable consumer or contract rights.
+
+5.8 General support, integration, customization, training, uptime guarantees,
+    incident-response deadlines and SLAs are not included unless expressly
+    agreed. Reporting a bug does not create a commitment to a particular fix
+    or release date. Reasonable assistance may be offered without creating a
+    continuing support obligation or enlarging the purchased scope.
+
+6. CLIENT WORK, ENTITIES AND TRANSFERS
+
+6.1 A client owning or independently operating an application must hold its
+    own suitable paid license. Its agency may act as Authorized Personnel and
+    install the package from Official Channels on that client's behalf. The
+    agency may deliver its independently authored application code and identify
+    the official dependency. The client's independent Software rights arise
+    from its own Order, not from an agency's Single or Unlimited key.
+
+6.2 An agency's license may cover an application it genuinely owns and operates
+    as its own hosted service, with clients receiving Runtime Access only,
+    within Section 3. Handing over the application, package-containing source,
+    repositories, server control, customer containers or independent operation
+    is not runtime-only hosting. The receiving owner needs its own license or
+    a separately authorized transfer before that handover.
+
+6.3 Affiliates, subsidiaries and client companies are not covered by Unlimited
+    merely because they share owners, personnel or infrastructure. Corporate-
+    group coverage, resale, OEM, reusable templates, starter kits and package-
+    containing products for customer installation require a separate express
+    agreement before that activity; buying more standard domain slots alone
+    does not authorize it.
+
+6.4 Except to the extent mandatory law provides otherwise, assignment or
+    transfer of a grant requires the Licensor's prior written approval and
+    cessation of the previous holder's use under the transferred grant. A
+    merger, asset sale or application sale does not multiply licenses. This
+    clause does not purport to override mandatory rules on lawful exhaustion
+    or transfers where those rules actually apply.
+
+7. RESTRICTIONS
+
+7.1 Outside Sections 3–6 or a separate express agreement, do not publish,
+    redistribute, mirror, sell, sublicense, share, rent, lend or transfer the
+    Software, keys, private download links or derivative package copies, alone
+    or in another deliverable, free or paid. This includes vendor directories,
+    archives, private client feeds, public/private customer repositories,
+    installers, containers, appliances, templates and prebuilt applications.
+    Encryption, minification, omission of a separate price or calling delivery
+    a service does not enlarge rights.
+
+7.2 Do not use pooled, leaked, stolen, refunded, revoked, fabricated or another
+    licensee's credentials. Do not falsify ownership, domain identity, paid
+    entitlement or requests, defeat checks to exceed scope, replay authorizations
+    across unrelated sites or distribute modifications that enable unlicensed
+    use. Authorized maintenance and non-waivable rights under Section 12 are
+    preserved; bypassing a technical check never creates additional license scope.
+
+7.3 Do not offer the Software or a substantially substitutable derivative as
+    your own theme, UI kit, component toolkit, starter, SDK or other reusable
+    product. Ordinary integration into a licensed business application is
+    allowed; publishing reusable package code or granting independent package
+    reuse is not. No rights to independently developed ideas or unprotected
+    techniques are claimed merely because they resemble the Software.
+
+7.4 Preserve notices and authorship. Do not imply endorsement, ownership of
+    FLEX Theme or trademark rights not granted. Application branding is allowed;
+    rebranding the package and concealing its origin to redistribute it is not.
+
+8. OWNERSHIP AND THIRD-PARTY MATERIAL
+
+8.1 The Software is licensed, not sold. The Licensor retains copyright and
+    other rights in its original materials. No exclusivity or copyright or
+    trademark assignment is implied. Your independent application remains yours.
+
+8.2 Third-party dependencies and bundled components retain their own licenses;
+    see THIRD_PARTY_NOTICES.md and the relevant packages. This License does not
+    relicense those materials, remove their permissions or authorize third-
+    party services. Restrictions apply to the Licensor's protected original
+    code and the proprietary package, not to rights independently granted by
+    Filament, Laravel or other third-party copyright holders.
+
+8.3 The public documentation repository does not distribute the implementation.
+    Its visibility grants no package-use rights. Any separately applicable
+    hosting-platform permissions to view or make service-native forks of public
+    materials are respected; they do not authorize operating FLEX Theme,
+    distributing its private implementation or using the Software without an
+    appropriate paid grant. Discussion and code-free issue reports are allowed.
+
+9. CREDENTIALS, VALIDATION AND PROPORTIONATE VERIFICATION
+
+9.1 Keep credentials private; share them only with Authorized Personnel where
+    necessary. Do not put them in public repositories, browser bundles, images,
+    logs or client-side code. Notify the Licensor of suspected compromise.
+    Credentials may be replaced or temporarily suspended to investigate misuse;
+    technical possession or validation results do not override the paid scope.
+
+9.2 Protected delivery and domain-activation services may verify the key,
+    product, plan, domain allowance, revocation and update cutoff. Downloads and
+    CI installations are not production activations by themselves. If software
+    verification becomes unavailable, lawful use of retained eligible versions
+    remains permitted under Section 5.1. An outage is not a license revocation.
+
+9.3 On reasonable written notice, the Licensor may request proportionate
+    confirmation of the Licensee, order, production hostnames and ownership or
+    hosting model relevant to scope. A representative's response within 30
+    calendar days and reasonably redacted supporting information are sufficient.
+    This is not an unrestricted audit or access to application source, customer
+    data, credentials, personal records or production servers. Verification must
+    comply with applicable privacy law and the service's privacy disclosures.
+
+10. BREACH, REFUNDS AND TERMINATION
+
+10.1 Use outside the grant must stop immediately; paying for one permitted
+     deployment does not authorize other deployments or redistribution. Subject
+     to mandatory law, an unremedied material breach may result in termination
+     by written notice after 30 days' notice describing the breach and an
+     opportunity to cure. Deliberate piracy, key-sharing, unauthorized source
+     distribution, fraud or repeated material breach may justify immediate
+     written termination. A cure period creates no temporary unlicensed rights.
+
+10.2 A disputed technical result, minor administrative mistake, temporary outage
+     or ordinary expiry of updates does not automatically terminate a valid
+     perpetual usage grant. A paid grant is not terminable merely for the
+     Licensor's convenience. Unrelated compliant grants are not terminated
+     solely because another independently identifiable grant is breached.
+
+10.3 Voluntary refund arrangements are those disclosed for the accepted order;
+     no additional refund or withdrawal waiver is invented by this document.
+     Mandatory remedies and payment-provider requirements prevail. A full
+     refund of the license purchase ends that grant, subject to mandatory law;
+     a partial adjustment does not unless expressly agreed. A chargeback dispute
+     alone is not proof of infringement; actual non-payment or fraud may justify
+     appropriate access restrictions and remedies under applicable law.
+
+10.4 After valid termination, cease use under that grant and remove working
+     copies and deployments. Legally required inaccessible archives and
+     immutable backups may remain until normal expiry if not restored to use.
+     Ownership, notices, accrued remedies and the provisions necessary to
+     enforce scope survive. No contractual automatic fine or blanket criminal
+     liability is imposed; available legal remedies remain applicable.
+
+11. WARRANTY AND LIABILITY
+
+11.1 To the maximum extent permitted by applicable law, the Software is supplied
+     AS IS and AS AVAILABLE, without implied warranties of merchantability,
+     fitness for a particular purpose or non-infringement. No guarantee is made
+     of error-free operation, universal compatibility, continuous hosted-service
+     availability or future development. Test your application, maintain backups
+     and secure its deployment. Express commitments and mandatory rights remain.
+
+11.2 Subject to Section 11.3, the Licensor is not liable for indirect or
+     consequential loss, lost profits, business interruption or data loss, and
+     aggregate liability arising from an affected grant is limited to the
+     license and renewal fees actually paid for that grant, excluding taxes
+     and unrelated services. This cap does not decrease merely as time passes.
+
+11.3 Nothing excludes liability for intentional wrongdoing, fraud, required
+     refunds or any liability or statutory protection that cannot lawfully be
+     excluded or limited. This limitation does not cap agreed unpaid license
+     fees, grant permission to infringe or predetermine a court's findings.
+
+12. GENERAL TERMS AND PROTECTION OF EXISTING RIGHTS
+
+12.1 Polish substantive law governs, subject to mandatory protections that apply
+     regardless of that choice. Subject to mandatory jurisdiction rules,
+     disputes lie before the competent courts in Warsaw, Poland. Calling a
+     purchase professional does not waive protections applicable to that buyer.
+
+12.2 Non-waivable rights concerning necessary backup, observation, study,
+     testing, interoperability, lawful transfer, consumer protection and other
+     mandatory exceptions are preserved. This License does not authorize other
+     uses by implication or purport to prohibit acts that the law permits
+     independently of the Licensor's consent.
+
+12.3 Priority is: an expressly agreed written amendment or custom agreement;
+     the accepted Order for its stated scope and commercial particulars; this
+     License version; then COMMERCIAL.md as an explanatory guide. A later
+     website edit, FAQ, price change or package update does not unilaterally
+     narrow previously accepted paid scope or rights to eligible versions.
+     A reusable starter/OEM distribution right requires an express agreement,
+     not merely choosing Unlimited or obtaining a routine checkout receipt.
+
+12.4 This is License version 1.0 for new grants from its effective date. Copies
+     or rights previously lawfully obtained under a different license remain
+     subject to that grant; this document does not retrospectively cancel them.
+     Earlier local development metadata does not establish that any particular
+     person received an earlier grant. Future releases or expanded scope must
+     have the rights applicable to them; an update cannot silently revoke paid
+     rights already accepted for eligible versions.
+
+12.5 If a provision is unenforceable, the remainder continues to the extent
+     legally possible. Failure to enforce a provision is not a waiver.
+     Correspondence may be by email, subject to mandatory form requirements.
+     English is the governing language; translations are for convenience.
+
+END OF LICENSE
