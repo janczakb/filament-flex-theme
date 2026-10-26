@@ -2,9 +2,15 @@ export const FlexHome = () => {
   const root = useRef(null);
   const laptopSection = useRef(null);
   const laptopFrame = useRef(null);
+  const compareFrame = useRef(null);
+  const compareHandle = useRef(null);
+  const comparePosition = useRef(50);
+  const compareDrag = useRef(null);
+  const [compareSidebar, setCompareSidebar] = useState('expanded');
   const [laptopStatus, setLaptopStatus] = useState('loading');
-  const [laptop3dEnabled, setLaptop3dEnabled] = useState(false);
+  const [laptop3dEnabled, setLaptop3dEnabled] = useState(null);
   const [laptopScreen, setLaptopScreen] = useState(0);
+  const [laptopPosterScreen, setLaptopPosterScreen] = useState(0);
   const [laptopEnding, setLaptopEnding] = useState(false);
   const [laptopMobile, setLaptopMobile] = useState(false);
   const [laptopMobileScreen, setLaptopMobileScreen] = useState(0);
@@ -72,6 +78,55 @@ export const FlexHome = () => {
   const selectSettings = index => { setSettingsIndex((index + settingsSlides.length) % settingsSlides.length); settingsViewport.current?.scrollTo({top:0,behavior:'instant'}); };
   const selectAppearance = id => { setSeenAppearances(previous=>previous.includes(id)?previous:[...previous,id]); setAppearance(id); };
   const selectLayout = id => { setSeenLayouts(previous=>previous.includes(id)?previous:[...previous,id]); setLayout(id); };
+
+  const revealComparison = value => {
+    const position = Math.max(0, Math.min(100, value));
+    comparePosition.current = position;
+    compareFrame.current?.style.setProperty('--fl-compare-position', position + '%');
+    compareFrame.current?.setAttribute('data-edge', position < 12 ? 'left' : position > 88 ? 'right' : 'none');
+    compareHandle.current?.setAttribute('aria-valuenow', String(Math.round(position)));
+    compareHandle.current?.setAttribute('aria-valuetext', Math.round(position) + '% FLEX Theme, ' + Math.round(100 - position) + '% native Filament');
+  };
+  const compareAtPointer = event => {
+    const bounds = compareFrame.current?.getBoundingClientRect();
+    if (bounds?.width) revealComparison((event.clientX - bounds.left) / bounds.width * 100);
+  };
+  const startComparison = event => {
+    if (!event.isPrimary || event.button !== 0) return;
+    compareDrag.current = {id:event.pointerId,x:event.clientX,y:event.clientY,moving:event.pointerType !== 'touch'};
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (event.pointerType !== 'touch') {
+      compareHandle.current?.focus({preventScroll:true});
+      compareFrame.current.dataset.dragging = 'true';
+      compareAtPointer(event);
+    }
+  };
+  const moveComparison = event => {
+    const drag = compareDrag.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    if (!drag.moving) {
+      const dx = Math.abs(event.clientX - drag.x), dy = Math.abs(event.clientY - drag.y);
+      if (dy > 8 && dy > dx) { compareDrag.current = null; return; }
+      if (dx < 6) return;
+      drag.moving = true;
+      compareFrame.current.dataset.dragging = 'true';
+    }
+    compareAtPointer(event);
+  };
+  const endComparison = event => {
+    const drag = compareDrag.current;
+    if (drag?.id === event.pointerId && event.type === 'pointerup') compareAtPointer(event);
+    compareDrag.current = null;
+    compareFrame.current?.removeAttribute('data-dragging');
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  const comparisonKey = event => {
+    const step = event.shiftKey ? 10 : 1;
+    const values = {ArrowLeft:comparePosition.current-step,ArrowDown:comparePosition.current-step,ArrowRight:comparePosition.current+step,ArrowUp:comparePosition.current+step,PageDown:comparePosition.current-10,PageUp:comparePosition.current+10,Home:0,End:100};
+    if (!['ArrowLeft','ArrowDown','ArrowRight','ArrowUp','PageDown','PageUp','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    revealComparison(values[event.key]);
+  };
 
   useEffect(() => {
     if (!copied) return;
@@ -141,6 +196,11 @@ export const FlexHome = () => {
     return () => { window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); window.removeEventListener('message', receive); reduced.removeEventListener('change', schedule); compact.removeEventListener('change', schedule); if (frame !== null) cancelAnimationFrame(frame); };
   }, [laptopMobileScreen]);
 
+  useEffect(() => { if (laptop3dEnabled) setLaptopStatus('loading'); }, [laptop3dEnabled]);
+  useEffect(() => {
+    if (!laptop3dEnabled || laptopStatus !== 'ready') setLaptopPosterScreen(laptopScreen);
+  }, [laptopScreen, laptop3dEnabled, laptopStatus]);
+
   const openFilm = event => { event?.preventDefault(); setFilmOpen(true); film.current?.showModal(); };
   const closeFilm = () => { film.current?.close(); setFilmOpen(false); };
   const copyInstall = async () => {
@@ -149,6 +209,10 @@ export const FlexHome = () => {
   };
 
   return <main id="flex-home" className="fl-home not-prose" ref={root}>
+    <link rel="preload" as="image" href="/docs/assets/laptop/posters/mobile-1.webp" media="(max-width: 700px)" fetchPriority="high"/>
+    <link rel="preload" as="image" href="/docs/assets/laptop/posters/tablet-1.webp" media="(min-width: 701px) and (max-width: 1023px)" fetchPriority="high"/>
+    <link rel="preload" as="image" href="/docs/assets/laptop/posters/desktop-short-1.webp" media="(min-width: 1024px) and (max-height: 779px)" fetchPriority="high"/>
+    <link rel="preload" as="image" href="/docs/assets/laptop/posters/desktop-1.webp" media="(min-width: 1024px) and (min-height: 780px)" fetchPriority="high"/>
     {laptop3dEnabled && <link rel="preload" href={(typeof window !== 'undefined' && ['localhost','127.0.0.1'].includes(window.location.hostname)) ? '/docs/assets/laptop/macbook-air-web.glb.txt' : '/docs/assets/laptop/macbook-air-web-3ed3ede8716f.gltf.json'} as="fetch" crossOrigin="anonymous"/>}
     <script id="fl-product-schema" type="application/ld+json">{JSON.stringify(productSchema).replace(/</g,'\\u003c')}</script>
     <a href="#fl-main" className="fl-skip">Skip to content</a>
@@ -159,7 +223,7 @@ export const FlexHome = () => {
     </nav>
 
     <section id="fl-main" className="fl-hero" aria-labelledby="fl-hero-title">
-      <section className="fl-laptop-scroll" ref={laptopSection} data-status={laptop3dEnabled ? laptopStatus : 'static'} aria-label={laptopMobile ? 'Explore six real FLEX Theme screens' : 'Explore six sides of FLEX Theme by scrolling'}>
+      <section className="fl-laptop-scroll" ref={laptopSection} data-status={laptop3dEnabled === false ? 'static' : laptopStatus} aria-label={laptopMobile ? 'Explore six real FLEX Theme screens' : 'Explore six sides of FLEX Theme by scrolling'}>
         <div className="fl-laptop-pin" onTouchStart={event => { laptopTouch.current = [event.touches[0].clientX,event.touches[0].clientY]; }} onTouchEnd={event => {
           if (!laptopMobile || !laptopTouch.current) return;
           const dx = event.changedTouches[0].clientX - laptopTouch.current[0];
@@ -176,7 +240,7 @@ export const FlexHome = () => {
           </div>
           <div className="fl-laptop-heading"><p className="fl-laptop-kicker">Your panel.</p><h1 id="fl-hero-title"><span className="fl-sr-only">FLEX Theme for Filament 5. </span>Reimagined.</h1></div>
           <div className="fl-laptop-closing" aria-hidden={laptopEnding ? undefined : true}><h2><span className="fl-laptop-closing-line fl-laptop-closing-first"><span>Less code.</span></span><span className="fl-laptop-closing-line fl-laptop-closing-second"><span>More character.</span></span></h2><a className="fl-button fl-button-primary" href={docs + 'theme-settings/overview'} tabIndex={laptopEnding ? 0 : -1}>Explore FLEX Theme <Arrow/></a></div>
-          <div className="fl-laptop-world"><div className="fl-laptop-fallback" role="img" aria-label="FLEX Theme in Safari on macOS"><picture><source media="(max-width: 1023px)" srcSet={'/docs/assets/laptop/screens/' + (laptopScreen === 1 ? '02-overview-desktop' : '01-campaigns-desktop') + '.webp'}/><img className="fl-laptop-desktop" src={'/docs/assets/laptop/screens/' + (laptopScreen === 1 ? '02-overview-desktop' : '01-campaigns-desktop') + '-retina.webp'} width="2056" height="1329" alt="" fetchPriority="high" decoding="async"/></picture>{laptopScreen > 1 && <img className="fl-laptop-safari-client" src={'/docs/assets/laptop/screens/' + ['','','03-brief','04-appearance','05-keyboard','06-search'][laptopScreen] + '-safari.webp'} width="2025" height="1123" alt=""/>}</div>{laptop3dEnabled && <iframe ref={laptopFrame} srcDoc={laptopDocument} title="Interactive 3D laptop displaying real FLEX Theme screens" loading="eager" tabIndex={-1}/>}</div>
+          <div className="fl-laptop-world"><div className="fl-laptop-fallback"><picture><source media="(max-width: 700px)" srcSet={'/docs/assets/laptop/posters/mobile-' + (laptopPosterScreen + 1) + '.webp'}/>{laptopPosterScreen === 0 && <source media="(max-width: 1023px)" srcSet="/docs/assets/laptop/posters/tablet-1.webp"/>}{laptopPosterScreen === 0 && <source media="(max-height: 779px)" srcSet="/docs/assets/laptop/posters/desktop-short-1.webp"/>}<img src={'/docs/assets/laptop/posters/desktop-' + (laptopPosterScreen + 1) + '.webp'} width="2880" height="1800" alt="MacBook Air displaying the real FLEX Theme panel in Safari" fetchPriority="high" decoding="async"/></picture></div>{laptop3dEnabled && <iframe ref={laptopFrame} srcDoc={laptopDocument} title="Interactive 3D laptop displaying real FLEX Theme screens" loading="eager" tabIndex={-1}/>}</div>
           <div className="fl-laptop-footer">
             <div className="fl-laptop-current" aria-live="polite" aria-atomic="true"><span className="fl-laptop-count">0{laptopScreen + 1}<span> / 06</span></span><span className="fl-laptop-view">{['Campaigns','Workspace overview','Campaign brief','Appearance','Keyboard shortcuts','Global search'][laptopScreen]}</span></div>
             <div className="fl-laptop-mobile-controls"><button onClick={() => setLaptopMobileScreen(previous => (previous + 5) % 6)} aria-label="Previous laptop screen"><Arrow/></button><button onClick={() => setLaptopMobileScreen(previous => (previous + 1) % 6)} aria-label="Next laptop screen"><Arrow/></button></div>
@@ -195,6 +259,37 @@ export const FlexHome = () => {
           <div><span className="fl-story-index">02</span><div><h3>Your signature, throughout.</h3><p>Colors, type, corners and layouts. All in the theme editor.</p></div></div>
           <div><span className="fl-story-index">03</span><div><h3>Keep your flow.</h3><p>Global Search, shortcuts and floating panels. Work stays within reach.</p></div></div>
         </div>
+      </div>
+    </section>
+
+    <section id="fl-compare" className="fl-compare-section fl-container" aria-labelledby="fl-compare-title">
+      <div className="fl-section-heading" data-reveal>
+        <div><p className="fl-eyebrow">THE FLEX DIFFERENCE</p><h2 id="fl-compare-title">Same app.<br/><span>A different feeling.</span></h2></div>
+        <p>A more compact workspace. More room for your work.<br/>Drag to compare the same page with and without FLEX Theme.</p>
+      </div>
+      <div className="fl-compare-tabs" role="tablist" aria-label="Compare sidebar states">
+        {['expanded','collapsed'].map(mode => <button key={mode} type="button" role="tab" id={'fl-compare-tab-' + mode} aria-selected={compareSidebar === mode} aria-controls="fl-compare-panel" tabIndex={compareSidebar === mode ? 0 : -1} onClick={() => {setCompareSidebar(mode); revealComparison(50);}} onKeyDown={event => {
+          if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'expanded' : event.key === 'End' ? 'collapsed' : compareSidebar === 'expanded' ? 'collapsed' : 'expanded';
+          setCompareSidebar(next); revealComparison(50);
+          event.currentTarget.parentElement.querySelector('#fl-compare-tab-' + next)?.focus();
+        }}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" strokeWidth="1.5"/><path d={mode === 'expanded' ? 'M10 4v16M6.5 8h.5m-.5 4h.5m-.5 4h.5' : 'M7 4v16M5 8h.1M5 12h.1M5 16h.1'} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>{mode === 'expanded' ? 'Expanded sidebar' : 'Collapsed sidebar'}</button>)}
+      </div>
+      <div role="tabpanel" id="fl-compare-panel" aria-labelledby={'fl-compare-tab-' + compareSidebar}>
+      <figure className="fl-compare-card" data-reveal>
+        <div className="fl-compare-frame" ref={compareFrame} style={{'--fl-compare-position':'50%'}} onPointerDown={startComparison} onPointerMove={moveComparison} onPointerUp={endComparison} onPointerCancel={endComparison} onLostPointerCapture={() => {compareDrag.current = null; compareFrame.current?.removeAttribute('data-dragging');}}>
+          {['expanded','collapsed'].map(mode => <img key={'native-' + mode} className={'fl-compare-native' + (compareSidebar === mode ? ' fl-compare-visible' : '')} src={assets + (mode === 'expanded' ? 'compare-filament-expanded-ready.webp' : 'compare-filament-collapsed.webp')} width="1920" height="1080" alt={compareSidebar === mode ? 'The Campaigns page with the ' + mode + ' sidebar in native Filament 5, without FLEX Theme' : ''} aria-hidden={compareSidebar !== mode} loading="lazy" decoding="async" draggable="false"/>)}
+          {['expanded','collapsed'].map(mode => <div key={'flex-' + mode} className={'fl-compare-flex' + (compareSidebar === mode ? ' fl-compare-visible' : '')}><img src={assets + 'compare-flex-' + mode + '.webp'} width="1920" height="1080" alt={compareSidebar === mode ? 'The same Campaigns page, records and ' + mode + ' sidebar rendered with FLEX Theme' : ''} aria-hidden={compareSidebar !== mode} loading="lazy" decoding="async" draggable="false"/></div>)}
+          <span className="fl-compare-label fl-compare-label-flex" aria-hidden="true"><span/>FLEX Theme</span>
+          <span className="fl-compare-label fl-compare-label-native" aria-hidden="true">Native Filament</span>
+          <div className="fl-compare-divider" aria-hidden="true"/>
+          <button className="fl-compare-handle" ref={compareHandle} type="button" role="slider" aria-label="Compare FLEX Theme with native Filament" aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-valuetext="50% FLEX Theme, 50% native Filament" aria-describedby="fl-compare-help" onKeyDown={comparisonKey} onDoubleClick={() => revealComparison(50)}>
+            <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4M12 5v14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+          </button>
+        </div>
+        <figcaption className="fl-compare-caption"><span>One page. The same records. Two experiences.</span><span id="fl-compare-help"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Drag to compare <span className="fl-sr-only">or use the arrow keys. Home and End reveal either full view.</span></span></figcaption>
+      </figure>
       </div>
     </section>
 
@@ -254,7 +349,7 @@ export const FlexHome = () => {
       </div>
     </section>
 
-    <section className="fl-layout-section" aria-labelledby="fl-layout-title"><div className="fl-container"><div className="fl-layout-heading" data-reveal><p className="fl-eyebrow">04 / A SPACE THAT WORKS FOR YOU</p><h2 id="fl-layout-title">A different point of view.<br/><span>The same attention to detail.</span></h2><p>Sidebar, topbar or a little of both. Give your workspace the structure it needs.</p><div className="fl-layout-options" aria-label="Preview navigation layouts">{[['sidebar','Sidebar'],['topbar','Topbar'],['combined','Sidebar + topbar']].map(([value,label]) => <button key={value} aria-pressed={layout === value} onClick={() => selectLayout(value)}><LayoutIcon variant={value}/>{label}</button>)}</div></div><div className="fl-layout-image" data-reveal>{['sidebar','topbar','combined'].map(item => <img key={item} className={layout === item ? 'fl-layout-active' : ''} src={seenLayouts.includes(item) ? assets + 'layout-' + item + '.webp' : undefined} width="2200" height="1238" alt={item === layout ? 'FLEX dashboard using ' + (item === 'combined' ? 'sidebar and topbar' : item) + ' navigation' : ''} aria-hidden={layout !== item} loading="lazy" decoding="async"/>)}</div><a className="fl-text-link fl-layout-link" href={docs + 'theme-settings/layout'}>Explore every layout option <Arrow/></a></div></section>
+    <section className="fl-layout-section" aria-labelledby="fl-layout-title"><div className="fl-container"><div className="fl-layout-heading" data-reveal><p className="fl-eyebrow">04 / A SPACE THAT WORKS FOR YOU</p><h2 id="fl-layout-title">A different point of view.<br/><span>The same attention to detail.</span></h2><p>Sidebar, topbar or a little of both. Give your workspace the structure it needs.</p><div className="fl-layout-options fl-settings-tabs" role="tablist" aria-label="Preview navigation layouts">{[['sidebar','Sidebar'],['topbar','Topbar'],['combined','Sidebar + topbar']].map(([value,label],index) => <button key={value} id={'fl-layout-tab-'+value} type="button" role="tab" aria-selected={layout === value} aria-controls="fl-layout-panel" tabIndex={layout === value ? 0 : -1} onClick={() => selectLayout(value)} onKeyDown={event=>{if(['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?2:(index+(event.key==='ArrowRight'?1:2))%3;selectLayout(['sidebar','topbar','combined'][next]);event.currentTarget.parentElement.children[next]?.focus();}}}><LayoutIcon variant={value}/>{label}</button>)}</div></div><div id="fl-layout-panel" className="fl-layout-image" role="tabpanel" aria-labelledby={'fl-layout-tab-'+layout} data-reveal>{['sidebar','topbar','combined'].map(item => <img key={item} className={layout === item ? 'fl-layout-active' : ''} src={seenLayouts.includes(item) ? assets + 'layout-' + item + '.webp' : undefined} width="2200" height="1238" alt={item === layout ? 'FLEX dashboard using ' + (item === 'combined' ? 'sidebar and topbar' : item) + ' navigation' : ''} aria-hidden={layout !== item} loading="lazy" decoding="async"/>)}</div><a className="fl-text-link fl-layout-link" href={docs + 'theme-settings/layout'}>Explore every layout option <Arrow/></a></div></section>
 
     <section id="fl-integration" className="fl-integration" aria-labelledby="fl-integration-title">
       <div className="fl-container">
@@ -263,7 +358,7 @@ export const FlexHome = () => {
           <div className="fl-integration-guide"><span className="fl-integration-label">A FAMILIAR STARTING POINT</span><h3>Your panel.<br/>Your codebase.</h3><p>Register the plugin in your Panel Provider and add FLEX to your native theme build. The installation guide covers licensing, assets and permissions.</p><a className="fl-button fl-integration-cta" href={docs+'theme-settings/overview#installation'}>Read the installation guide <Arrow/></a><a className="fl-integration-secondary" href={docs+'theme-settings/panels-permissions'}>Multiple panels & permissions <Arrow diagonal/></a></div>
           <div className="fl-integration-editor">
             <div className="fl-integration-files" role="tablist" aria-label="FLEX integration examples">{[['php','Panel Provider'],['css','Theme CSS']].map(([id,label])=><button key={id} id={'fl-code-tab-'+id} type="button" role="tab" aria-selected={integrationTab===id} aria-controls="fl-code-example" tabIndex={integrationTab===id?0:-1} onClick={()=>setIntegrationTab(id)} onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();setIntegrationTab(id==='php'?'css':'php');event.currentTarget.parentElement.children[id==='php'?1:0]?.focus();}}}><span className={'fl-file-type fl-file-type-'+id} aria-hidden="true">{id==='php'?'PHP':'CSS'}</span>{label}</button>)}</div>
-            <div id="fl-code-example" role="tabpanel" aria-labelledby={'fl-code-tab-'+integrationTab} tabIndex="0" className="fl-integration-code"><p className="fl-integration-filename">{integrationTab==='php'?'AdminPanelProvider.php':'theme.css'}</p>{integrationTab==='php'?<pre><code><span className="fl-syntax-keyword">use</span> <span className="fl-syntax-class">Flex\Theme\FlexThemePlugin</span>;{'\n\n'}<span className="fl-syntax-keyword">return</span> <span className="fl-syntax-variable">$panel</span>{'\n'}    -&gt;<span className="fl-syntax-function">plugin</span>(<span className="fl-syntax-class">FlexThemePlugin</span>::<span className="fl-syntax-function">make</span>()){'\n'}    -&gt;<span className="fl-syntax-function">viteTheme</span>({'\n'}        <span className="fl-syntax-string">'resources/css/filament/admin/theme.css'</span>{'\n'}    );</code></pre>:<pre><code><span className="fl-syntax-comment">/* Keep the native theme imports, then add: */</span>{'\n\n'}<span className="fl-syntax-keyword">@import</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/resources/css/theme.css'</span>;{'\n'}<span className="fl-syntax-keyword">@source</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/src/**/*.php'</span>;{'\n'}<span className="fl-syntax-keyword">@source</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/resources/views/**/*.blade.php'</span>;</code></pre>}</div>
+            <div id="fl-code-example" role="tabpanel" aria-labelledby={'fl-code-tab-'+integrationTab} tabIndex="0" className="fl-integration-code"><p className="fl-integration-filename">{integrationTab==='php'?'AdminPanelProvider.php':'theme.css'}</p>{integrationTab==='php'?<pre tabIndex={0} aria-label="PHP panel configuration"><code className="language-php" data-language="php"><span className="fl-syntax-keyword">use</span> <span className="fl-syntax-class">Flex\Theme\FlexThemePlugin</span>;{'\n\n'}<span className="fl-syntax-keyword">return</span> <span className="fl-syntax-variable">$panel</span>{'\n'}    -&gt;<span className="fl-syntax-function">plugin</span>(<span className="fl-syntax-class">FlexThemePlugin</span>::<span className="fl-syntax-function">make</span>()){'\n'}    -&gt;<span className="fl-syntax-function">viteTheme</span>(<span className="fl-syntax-string">'resources/css/filament/admin/theme.css'</span>);</code></pre>:<pre tabIndex={0} aria-label="Theme CSS configuration"><code className="language-css" data-language="css"><span className="fl-syntax-comment">/* Keep the native theme imports, then add: */</span>{'\n\n'}<span className="fl-syntax-keyword">@import</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/resources/css/theme.css'</span>;{'\n'}<span className="fl-syntax-keyword">@source</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/src/**/*.php'</span>;{'\n'}<span className="fl-syntax-keyword">@source</span> <span className="fl-syntax-string">'../../../../vendor/flex/theme/resources/views/**/*.blade.php'</span>;</code></pre>}</div>
             <div className="fl-integration-install"><div><span>AFTER LICENSE SETUP</span><code>composer require flex/theme:^0.1</code></div><button type="button" onClick={copyInstall} aria-label="Copy Composer installation command"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">{copied?<path d="m5 12 4 4L19 6"/>:<><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M15 4H7a3 3 0 0 0-3 3v8"/></>}</svg><span className="fl-sr-only">{copied?'Copied':'Copy'}</span></button><span className="fl-sr-only" role="status">{copied?'Installation command copied.':''}</span></div>
           </div>
         </div>
