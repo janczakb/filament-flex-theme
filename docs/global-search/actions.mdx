@@ -1,0 +1,102 @@
+---
+title: "Record actions"
+description: "Keep Edit, Delete, confirmations and custom native Actions beside each result."
+icon: "mouse-pointer-2"
+---
+
+Record actions appear on the right of the result. Users do not need to enter a separate record-to-actions screen. On smaller screens, additional actions are grouped into a menu.
+
+## Automatic native resource actions
+
+Accessible View and Edit actions are added when the resource supports them. Where the resource has a matching page, the action links to that page. Otherwise, native View/Edit modal fallbacks use the resource's infolist/form. Delete is added only when the resource allows deletion.
+
+Native validation, notifications, transactions and action confirmation remain in Filament. The UI rechecks record access when mounting and executing an action.
+
+## Add a resource action
+
+```php
+use Filament\Actions\Action;
+use Illuminate\Database\Eloquent\Model;
+
+public static function getGlobalSearchResultActions(Model $record): array
+{
+    return [
+        Action::make('contact')
+            ->label('Contact details')
+            ->icon('hugeicons-contact-01')
+            ->url(static::getUrl('view', ['record' => $record]))
+            ->authorize(fn (): bool => static::canView($record)),
+    ];
+}
+```
+
+Use stable action names. An existing action with the name `view`, `edit` or `delete` prevents the corresponding automatic duplicate.
+
+## Customize automatically configured resources
+
+```php
+use Flex\Theme\Search\NativeResourceSource;
+use Filament\Actions\Action;
+
+SearchConfiguration::make()->configureResourcesUsing(
+    fn (NativeResourceSource $source, string $resource) => $source->modifyActionsUsing(
+        function (array $actions, Model $record) use ($resource): array {
+            return [
+                ...$actions,
+                Action::make('send-summary')
+                    ->label('Send summary')
+                    ->icon('hugeicons-mail-01')
+                    ->record($record)
+                    ->authorize(fn (): bool => $resource::canEdit($record))
+                    ->requiresConfirmation()
+                    ->action(fn () => app(SummaryService::class)->send($record)),
+            ];
+        }
+    )
+);
+```
+
+`SummaryService` is your application service. Recheck its business authorization in the service or policy as appropriate. Do not treat a search result as permission to send messages.
+
+## Native groups and custom presentation
+
+```php
+use Filament\Actions\ActionGroup;
+
+$source->modifyActionsUsing(fn (array $actions): array => [
+    ActionGroup::make($actions)->label('Record actions'),
+]);
+```
+
+Groups and actions with richer badges, tooltips, keyboard bindings, custom click handlers or POST behavior keep native rendering where required. Straightforward actions use a smaller transport representation. Both execute through the same native action owner.
+
+## Disable automatic record actions
+
+```php
+NativeResourceSource::make(CustomerResource::class)->recordActions(false);
+```
+
+This stops automatic View/Edit/Delete additions. It does not remove actions explicitly returned by the resource or your modifier.
+
+## Source-level actions
+
+```php
+NativeResourceSource::make(CustomerResource::class)
+    ->modifyNavigationActionsUsing(fn (array $actions): array => [
+        ...$actions,
+        Action::make('documentation')
+            ->label('Customer guide')
+            ->icon('hugeicons-book-open-01')
+            ->url('/help/customers'),
+    ]);
+```
+
+Native list/create source actions remain available when the resource supports and permits them. An action modifier receives the existing list so you can extend or replace it intentionally.
+
+## What happens after a change
+
+A successful modal Edit in an eligible current-resource cursor stream updates only the edited row, including its text, avatar and available actions. Loaded pages, the cursor and the visible scroll anchor are retained. The saved record is checked again against the current query, filters and access rules; if it no longer belongs in the results, only that row is removed. The update is sent after the native action has completed and its transaction has committed.
+
+A confirmed Delete in an eligible cursor stream removes just that row with an exit animation. An overlapping fetch cannot add a removed key back. Create actions refresh the result snapshot to recalculate membership and page boundaries.
+
+Numbered pages, offset pagination, nested actions, root searches and custom result views retain a refresh path. Edits also use that path when a query has custom sorting beyond the primary key, grouping, aggregates, unions, limits or a changed record identity. This preserves ordering and page boundaries. Reduced motion skips row animations. Validation errors, cancelled actions and failed saves do not apply a successful row update.

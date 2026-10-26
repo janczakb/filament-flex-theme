@@ -1,0 +1,107 @@
+---
+title: "Resources and queries"
+description: "Search selected resources while keeping native Filament query behavior."
+icon: "database"
+---
+
+FLEX discovers registered resources that pass native global-search eligibility, `canViewAny()` and any additional FLEX search gate. Record-level view/edit policies are checked when building results and actions.
+
+## Native labels and attributes
+
+```php
+// CustomerResource
+protected static ?string $modelLabel = 'Customer';
+protected static ?string $pluralModelLabel = 'Customers';
+protected static ?string $recordTitleAttribute = 'name';
+
+public static function getGloballySearchableAttributes(): array
+{
+    return ['name', 'email', 'company.name'];
+}
+```
+
+The resource category uses `getPluralModelLabel()`. Changing that label changes the displayed category and input pill. Search groups and aliases are separate from the label.
+
+Native resource query constraints, relationship search paths, native title/details/URL methods and native global-search overrides remain relevant. If your resource overrides `getGlobalSearchResults()`, that override owns the root result implementation; a scoped resource source has its own paginated query path.
+
+## Exclude resources
+
+```php
+SearchConfiguration::make()->exclude([
+    AuditLogResource::class,
+    InternalSettingsPage::class,
+]);
+```
+
+For the default native provider, exclusion removes the automatic category and excludes the resource from root record searches. A custom global-search provider remains responsible for respecting its own allowlist.
+
+## Search only an allowlist
+
+```php
+use Flex\Theme\Search\NativeResourceSource;
+
+SearchConfiguration::make()->configureResourcesUsing(
+    fn (NativeResourceSource $source, string $resource) => $source->authorize(
+        in_array($resource, [CustomerResource::class, OrderResource::class], true)
+    )
+);
+```
+
+This callback applies to automatically configured resource sources, including the default native root adapter. Keep resource policies as your primary authorization rules.
+
+## Explicitly register a resource source
+
+```php
+SearchConfiguration::make()
+    ->discover(pages: true, resources: false)
+    ->rootRecords(false)
+    ->sources([
+        NativeResourceSource::make(CustomerResource::class)
+            ->root(true)
+            ->aliases(['clients', 'accounts'])
+            ->group('Sales')
+            ->limit(25),
+    ]);
+```
+
+`discover(resources: false)` controls automatic source discovery. It does not by itself disable the native provider's root record search; `rootRecords(false)` does that.
+
+## Narrow a query and eager-load details
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+
+NativeResourceSource::make(CustomerResource::class)
+    ->queryUsing(fn (Builder $query) => $query
+        ->where('archived', false)
+        ->with('company'));
+```
+
+The callback narrows the already scoped query. Preserve its tenant and authorization constraints. Do not create an unscoped replacement query to bypass them.
+
+## Add validated filters
+
+```php
+NativeResourceSource::make(CustomerResource::class)->filters(
+    options: [
+        'status' => ['active' => 'Active', 'archived' => 'Archived'],
+    ],
+    apply: function (Builder $query, array $filters): void {
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+    },
+);
+```
+
+Filter values are selected from the configured whitelist. Do not turn arbitrary client strings into SQL column names or order expressions.
+
+## Root behavior and preload
+
+`rootRecords(true, preload: false)` permits root record search when a query is entered. Preloading is separate; keep it off for large collections. `rootRecords(false)` lets users choose a resource before querying its records. Explicit sources have their own `root()` option.
+
+## Pagination and parent resources
+
+`NativeResourceSource` uses keyset/cursor pagination by default and appends the model primary key as a stable tie-breaker. `cursorPagination(false)` selects offset pagination. Numbered navigation and custom sorts need verification against your database and resource query.
+
+Nested resources can use `automaticParents()` or an explicit `parentUsing()` resolver. Parent access and relationships are checked. See [Recipes](/docs/global-search/recipes) for a scoped parent example.

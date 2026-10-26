@@ -1,0 +1,172 @@
+---
+title: "All settings reference"
+description: "Every persisted preference key, current default and accepted value."
+icon: "list"
+---
+
+This is the complete current settings dictionary. Values are panel-wide. The
+labels and UI-only helper fields in the editor are not additional saved keys.
+Use [PHP configuration](/docs/theme-settings/configuration) for precedence and
+[Panels and permissions](/docs/theme-settings/panels-permissions) for access.
+
+The Default preset supplies `base_tint: 18`. Nullable native options retain
+inheritance. Derived corner values are recomputed, not independently editable.
+
+## Brand
+
+[Behavior and examples](/docs/theme-settings/brand).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `brand` | `"Flex Studio"` | Nonblank string, maximum 60 characters. |
+| `logo_path` | `null` | Null or a generated, validated asset path owned by this panel and asset kind. |
+| `dark_logo_path` | `null` | Null or a generated, validated asset path owned by this panel and asset kind. |
+| `compact_logo_path` | `null` | Null or a generated, validated asset path owned by this panel and asset kind. |
+| `dark_compact_logo_path` | `null` | Null or a generated, validated asset path owned by this panel and asset kind. |
+| `favicon_path` | `null` | Null or a generated, validated asset path owned by this panel and asset kind. |
+
+## Appearance
+
+[Behavior and examples](/docs/theme-settings/appearance).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `accent` | `"#6c43bf"` | Six-digit HEX; shared Primary color. |
+| `base_tint` | `18` | Integer 0–30. |
+| `theme_preset` | `"default"` | default, tide, orchid, grove, ember, slate, citron, baltic, bloom, dune, lagoon, iris, custom. |
+| `font` | `"Inter"` | Suggested family or a valid custom-font library family. |
+| `radius_scale` | `"medium"` | none, extra-small, small, medium, large. |
+| `form_radius_scale` | `"large"` | none, extra-small, small, medium, large. |
+| `color_mode` | `"both"` | Six-digit HEX semantic palette seed. |
+| `theme_switcher` | `null` | true / false / null (native inheritance). |
+| `default_theme_mode` | `"inherit"` | inherit, light, dark, system. |
+| `custom_fonts` | `[]` | Up to 20 unique valid Google family/URL pairs. |
+
+## Colors
+
+[Behavior and examples](/docs/theme-settings/colors).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `accent` | `"#6c43bf"` | Six-digit HEX; shared Primary color. |
+| `color_danger` | `"#ff2357"` | Six-digit HEX semantic palette seed. |
+| `color_gray` | `"#71717a"` | Six-digit HEX semantic palette seed. |
+| `color_info` | `"#00d2ef"` | Six-digit HEX semantic palette seed. |
+| `color_success` | `"#80cd00"` | Six-digit HEX semantic palette seed. |
+| `color_warning` | `"#edb200"` | Six-digit HEX semantic palette seed. |
+
+## Layout
+
+[Behavior and examples](/docs/theme-settings/layout).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `shell_layout` | `"classic"` | classic, inset. |
+| `customize_layout` | `false` | Boolean; opts into saved navigation/topbar overrides. |
+| `navigation` | `"sidebar"` | sidebar, top; active as an override when customize_layout is true. |
+| `topbar` | `false` | Boolean. |
+| `sidebar_collapse` | `"inherit"` | inherit, fixed, icons, hidden; the UI offers the three concrete choices. |
+| `sidebar_groups_collapsible` | `null` | true / false / null (native inheritance). |
+| `breadcrumbs` | `null` | true / false / null (native inheritance). |
+| `max_content_width` | `"inherit"` | inherit, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl, 7xl, full; explicit Page width wins. |
+| `user_menu_enabled` | `null` | true / false / null; cannot re-enable a natively forbidden menu. |
+| `user_menu_position` | `"inherit"` | inherit, topbar, sidebar; requires an available location. |
+| `sticky_topbar` | `true` | Boolean; standalone topbar only. |
+| `spacing` | `24` | 16, 24, 32 px. |
+| `row_height` | `44` | 40, 44, 52 px. |
+
+## Details
+
+[Behavior and examples](/docs/theme-settings/details).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `font_size` | `14` | 12, 13, 14, 15, 16 px. |
+| `motion` | `true` | Boolean. |
+| `uppercase_labels` | `false` | Boolean. |
+| `theme_transition` | `"reveal"` | none, reveal, eclipse, split, rise. |
+
+## Search
+
+[Behavior and examples](/docs/global-search/configuration).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `search_pagination` | `"infinite"` | pages, load-more, infinite. |
+| `search_stream_limit` | `500` | 100, 250, 500, 1000. |
+| `search_override_debounce` | `false` | Boolean. |
+| `search_page_size` | `25` | 10, 25, 50, 100. |
+| `search_virtualization` | `true` | Boolean. |
+| `search_virtual_threshold` | `20` | 20, 50, 100. |
+| `search_category_position` | `"left"` | left, top. |
+| `search_width` | `816` | 640, 720, 816, 960. |
+| `search_height` | `720` | 560, 640, 720, 800. |
+| `search_result_limit` | `0` | 0, 10, 20, 50, 100, 250, 500. |
+| `search_history` | `true` | Boolean. |
+| `search_favorites` | `true` | Boolean. |
+| `search_recent_limit` | `8` | 5, 8, 12. |
+| `search_favorite_limit` | `12` | 5, 12, 20. |
+| `search_min_length` | `1` | 1, 2, 3. |
+| `search_debounce` | `300` | 150, 300, 500, 750. |
+| `search_highlight` | `true` | Boolean. |
+| `search_show_counts` | `false` | Boolean. |
+| `search_close_on_escape` | `true` | Boolean. |
+| `search_close_on_click_away` | `true` | Boolean. |
+| `search_autofocus` | `true` | Boolean. |
+
+## Keyboard
+
+[Behavior and examples](/docs/workspace/keyboard).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `shortcut_search` | `"inherit"` | Nullable primary binding; inherit also accepts native search bindings. |
+| `shortcut_sidebar` | `"mod+."` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_theme` | `"mod+shift+l"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_next` | `"arrowdown"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_previous` | `"arrowup"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_activate` | `"enter"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_back` | `"backspace"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_help` | `"mod+shift+/"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_undo` | `"mod+z"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_navigation` | `"g"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_row_next` | `"j"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_row_previous` | `"k"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_row_open` | `"o"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_row_select` | `"a"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_page_select` | `"mod+a"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_page_previous` | `"["` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_page_next` | `"]"` | Nullable primary binding; see the full keyboard binding reference. |
+| `shortcut_filters` | `"f"` | Nullable primary binding; see the full keyboard binding reference. |
+
+## Derived corner values
+
+[Behavior and examples](/docs/theme-settings/appearance#radius-and-radius-form).
+
+| Key | Default | Accepted values / meaning |
+| --- | --- | --- |
+| `radius` | `16` | Derived from radius_scale: 0, 4, 8, 16, 24 px. |
+| `control_radius` | `12` | Derived from form_radius_scale: 0, 2, 4, 8, 12 px. |
+| `button_radius` | `16` | Derived from radius_scale: 0, 4, 8, 16, 24 px. |
+| `modal_radius` | `24` | Derived from radius_scale: 0, 6, 12, 24, 32 px. |
+
+## Portable and nonportable values
+
+Preference JSON includes the Appearance, Colors, Layout, Details, Search and
+Keyboard keys above, plus `custom_fonts`. It omits Brand identity/paths and the
+four derived corner values. `settingsOverrides()` accepts that portable set;
+`settings()` can supply the complete validated theme configuration. Branding
+paths must still be genuine generated panel-owned handles.
+
+## Retired values and UI-only fields
+
+Do not pass retired `content_width`, `border_style`, `shadow`, `density`, `glass`,
+`sidebar_width`, `light_canvas`, `light_surface`, `light_text`, `dark_canvas`,
+`dark_surface`, `dark_text`, `flex_fields`, `search_enabled`, or
+`search_categories` as supported configuration. Use `max_content_width`, native
+sidebar width configuration, derived tokens and the typed Search API instead.
+
+`layout_variant`, `sidebar_mode`, `available_modes`, `default_mode`,
+`show_theme_switcher`, `breadcrumbs_visible` and other editor helper fields map
+to the real keys above. They are not public saved settings. Invalid or unknown
+PHP/import keys fail validation instead of creating new theme behavior.

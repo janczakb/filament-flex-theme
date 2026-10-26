@@ -1,0 +1,148 @@
+---
+title: "Configuration"
+description: "Every saved search setting, its accepted values and PHP precedence."
+icon: "sliders-horizontal"
+---
+
+Configure the search feature on `FlexThemePlugin::make()->search(SearchConfiguration::make())`. Use Theme Settings for administrator-editable preferences, or PHP to enforce specific values.
+
+## Enable or disable search in PHP
+
+FLEX Search is enabled by default. Activation belongs to panel configuration and cannot be changed through Theme Settings.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Search\SearchConfiguration;
+
+// Keep the default FLEX Search experience.
+FlexThemePlugin::make()->search(true);
+
+// Restore native Filament search, or use your own provider.
+FlexThemePlugin::make()->search(false);
+
+// The same switch when configuring other search features.
+FlexThemePlugin::make()->search(
+    SearchConfiguration::make()->enabled(false)
+);
+```
+
+Disabling FLEX Search hides its Search settings tab and removes its modal and enhanced search controls. Keyboard settings and workspace/table shortcuts remain independently controlled by `ShortcutConfiguration`. Native Filament search keeps its own provider and key bindings.
+
+Theme Settings uses native Filament fields. There is no Integrations tab or FLEX Fields settings adapter. Applications can still use FLEX Fields components alongside the theme.
+
+## Lock selected settings in PHP
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Search\SearchConfiguration;
+
+FlexThemePlugin::make()->search(
+    SearchConfiguration::make()
+        ->settings([
+            'search_pagination' => 'load-more',
+            'search_page_size' => 25,
+            'search_stream_limit' => 500,
+            'search_override_debounce' => true,
+            'search_debounce' => 300,
+        ])
+);
+```
+
+Only the settings you provide are locked. PHP search overrides take precedence over saved appearance settings. `settings()` accepts only the search keys listed below; invalid values throw a validation exception.
+
+## Window and discovery
+
+| Setting | Default | Accepted values / behavior |
+| --- | --- | --- |
+| `search_category_position` | `left` | `left`, `top`. |
+| `search_width` | `816` | `640`, `720`, `816`, `960` px; bounded desktop window. |
+| `search_height` | `720` | `560`, `640`, `720`, `800` px. |
+| `search_autofocus` | `true` | Focus the input on opening. |
+| `search_close_on_escape` | `true` | Allow the search dialog to close with Escape; native child dialogs keep their own handling. |
+| `search_close_on_click_away` | `true` | Close by clicking the backdrop. |
+| `search_min_length` | `1` | `1`, `2`, `3` characters before record searching. |
+| `search_override_debounce` | `false` | When false, inherit Filament's global-search debounce. |
+| `search_debounce` | `300` | `150`, `300`, `500`, `750` ms; used when overriding debounce. |
+| `search_highlight` | `true` | Highlight matching text in plain-string titles. |
+| `search_show_counts` | `false` | Show counts of available/loaded results; not an exact database total. |
+| `search_result_limit` | `0` | `0`, `10`, `20`, `50`, `100`, `250`, `500`; `0` keeps provider/resource limits. |
+
+## Pagination and virtualization
+
+| Setting | Default | Accepted values / behavior |
+| --- | --- | --- |
+| `search_pagination` | `infinite` | `pages`, `load-more`, `infinite`. |
+| `search_page_size` | `25` | `10`, `25`, `50`, `100`. |
+| `search_stream_limit` | `500` | `100`, `250`, `500`, `1000`; bounded client stream before continuing on another segment. |
+| `search_virtualization` | `true` | Enable windowing for eligible list streams. |
+| `search_virtual_threshold` | `20` | `20`, `50`, `100` loaded results before virtualization. |
+
+Virtualization limits rendered DOM, while pagination limits query and transfer size. They are separate controls. A custom view or richer result can retain native HTML; do not assume every custom layout uses the plain-row path.
+
+## History and favorites
+
+| Setting | Default | Accepted values |
+| --- | --- | --- |
+| `search_history` | `true` | Boolean. |
+| `search_favorites` | `true` | Boolean. |
+| `search_recent_limit` | `8` | `5`, `8`, `12`. |
+| `search_favorite_limit` | `12` | `5`, `12`, `20`. |
+
+```php
+SearchConfiguration::make()
+    ->history(false)
+    ->favorites(false);
+```
+
+These convenience methods also lock their saved settings. Storage choices are described in [History and favorites](/docs/global-search/history-favorites).
+
+## Full-screen desktop mode
+
+```php
+SearchConfiguration::make()->fullscreen(true);
+```
+
+`fullscreen()` is a PHP presentation choice, separate from the saved bounded-window dimensions. The default is `false`; mobile is full screen independently.
+
+## Hide settings without disabling search
+
+```php
+SearchConfiguration::make()->settingsTab(false);
+```
+
+## Disable the entire Theme Settings page
+
+```php
+FlexThemePlugin::make()->settingsPage(false);
+```
+
+Search remains independently configurable in PHP. Supplying the entire theme through `FlexThemePlugin::settings([...])` also removes the settings page. That method supplies theme configuration; it is different from `SearchConfiguration::settings([...])`, which locks individual search preferences.
+
+## Draft changes, reset and configuration files
+
+The settings save bar shows whether there are unsaved changes, and Filament warns before leaving. **Reset tab** restores only the current tab's draft preferences after confirmation. Save is still required. Workspace identity, branding files and custom font metadata are preserved by reset actions.
+
+**Export settings** downloads the draft preferences as JSON. **Import settings** accepts a file or pasted JSON (up to 64 KB), validates it and displays differences for review before applying to the draft. PHP-managed values are skipped. Imports do not transfer workspace identity or branding files and do not save automatically.
+
+General theme preferences can also be locked while keeping the settings page available:
+
+```php
+FlexThemePlugin::make()
+    ->settingsOverrides([
+        'accent' => '#6633cc',
+        'font_size' => 14,
+    ])
+    ->search(
+        SearchConfiguration::make()->settings([
+            'search_page_size' => 50,
+        ])
+    );
+```
+
+Locked controls display **Managed in PHP**. Import, reset and save enforce those values on the server as well. Dedicated search, shortcut and sticky-topbar overrides take precedence over matching `settingsOverrides()` values. Fully PHP-managed `settings([...])` still removes the settings page.
+
+## Authorization and replacement
+
+`enabled(false)` or `search(false)` turns off the replacement. `authorize()` controls who can use an enabled FLEX search experience. Denying access to an enabled replacement is not a request to fall through to native search.
+
+See the [PHP API reference](/docs/global-search/reference) for discovery, sources, callbacks and presentation methods.

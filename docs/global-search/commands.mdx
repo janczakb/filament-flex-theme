@@ -1,0 +1,100 @@
+---
+title: "Commands"
+description: "Add authorized application commands and choose which built-ins are available."
+icon: "terminal"
+---
+
+## Built-in commands
+
+The default set is `theme`, `sidebar`, `profile`, `settings` and `logout`. Commands appear only when their underlying feature is available: for example, a top-navigation layout has no desktop sidebar command, and a panel with forced dark mode has no theme switch.
+
+```php
+SearchConfiguration::make()->builtInCommands([
+    'theme', 'profile', 'logout',
+]);
+```
+
+Use `builtInCommands([])` to remove all built-ins. Tenant switching is a source configured through `tenants()`, not another value in this list.
+
+## Add a link command
+
+```php
+use Filament\Actions\Action;
+use Flex\Theme\Search\SearchCommand;
+
+SearchConfiguration::make()->commands([
+    SearchCommand::make('open-billing', 'Open billing')
+        ->icon('hugeicons-invoice-01')
+        ->aliases(['payments', 'subscription'])
+        ->authorize(fn ($user): bool => $user->can('view-billing'))
+        ->action(Action::make('billing')->url('/billing')),
+]);
+```
+
+Command IDs must be unique within the configured command list. Use stable lowercase identifiers. Custom commands can replace a built-in with the same ID, so choose IDs deliberately.
+
+## Add a confirmed server action
+
+```php
+SearchCommand::make('refresh-catalog', 'Refresh catalog')
+    ->icon('hugeicons-refresh')
+    ->authorize(fn ($user): bool => $user->can('refresh-catalog'))
+    ->closeOnSelect(false)
+    ->action(
+        Action::make('refresh-catalog')
+            ->requiresConfirmation()
+            ->action(fn () => app(CatalogService::class)->refresh())
+    );
+```
+
+The action is still a native Filament Action. `closeOnSelect(false)` keeps the search open for its dialog. An action's own `authorize()` rules apply in addition to the command gate.
+
+## Decide where a command appears
+
+```php
+SearchCommand::make('customer-help', 'Customer help')
+    ->context($customerSource->id())
+    ->sort(-10)
+    ->preload(true)
+    ->action(Action::make('help')->url('/help/customers'));
+```
+
+Commands default to the root `all` context. `context($id)` selects a source; `anyContext()` allows every context. `withinPath([...])` matches an exact nested path. `preload(false)` hides a command until there is query text.
+
+## Use a custom matching function
+
+```php
+SearchCommand::make('help', 'Help center')
+    ->anyContext()
+    ->filterUsing(fn (string $query): bool =>
+        $query === '' || str_starts_with(mb_strtolower($query), 'help')
+    )
+    ->action(Action::make('help')->url('/help'));
+```
+
+A custom filter owns command matching. Callbacks can receive `user`, `panel`, `context`, `trail` and `query` by those parameter names. The `trail` is a typed `SearchContext`; `context` is the current source ID.
+
+## Open another source
+
+```php
+SearchCommand::make('find-orders', 'Find orders')
+    ->opens('orders', ['status' => 'open']);
+```
+
+The target must be registered and accessible. Context data is validated and signed for navigation; authorize the records independently in the destination query. See [Context navigation](/docs/global-search/context-navigation).
+
+## Commands without native global search
+
+```php
+$panel->globalSearch(false)->plugin(
+    FlexThemePlugin::make()->search(
+        SearchConfiguration::make()
+            ->commandsWithoutNativeSearch()
+            ->discover(pages: true, resources: false)
+            ->rootRecords(false)
+            ->builtInCommands(['theme', 'profile'])
+    )
+);
+```
+
+This explicitly permits the FLEX experience without a native provider. Automatic resource discovery depends on native global-search availability; register custom sources if you need additional data in this mode.

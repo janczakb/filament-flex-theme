@@ -1,0 +1,136 @@
+---
+title: "Announcement examples"
+description: "Ready-to-adapt examples for releases, maintenance, campaigns, dismissals and on-demand bars."
+icon: "flask-conical"
+---
+
+These configurations use real package APIs. Register each chosen bar in
+`FlexThemePlugin::make()->announcementBars([...])`, using unique IDs. They render
+your application's own content; none requires the demo application.
+
+```php
+use Flex\Theme\Announcements\Announcement;
+use Flex\Theme\Announcements\AnnouncementBar;
+```
+
+## 1. A quiet permanent message
+
+```php
+AnnouncementBar::make('support')
+    ->global()
+    ->autoPlay(false)
+    ->dismissible(false)
+    ->messages([
+        Announcement::make('contact', 'A little help is always close by.')
+            ->action('Contact support', 'mailto:support@example.com'),
+    ]);
+```
+
+A single unscheduled message without countdown/polling has no rotation timer.
+
+## 2. A release carousel
+
+```php
+AnnouncementBar::make('release')
+    ->global()->sticky(false)->controls()->interval(6000)
+    ->dismissal('bar', 'session')
+    ->messages([
+        Announcement::make('workspace', 'A clearer view of everything you are building.')
+            ->priority(20)->tone('primary')->action('Explore', '/whats-new'),
+        Announcement::make('team', 'Your whole team, working in one place.')
+            ->priority(10)->tone('success')->duration(9000),
+    ]);
+```
+
+## 3. Scheduled maintenance
+
+```php
+AnnouncementBar::make('maintenance')
+    ->global()->messages([
+        Announcement::make('planned-window', 'Maintenance begins at 22:00 UTC.')
+            ->tone('warning')->icon('hugeicons-clock-01')
+            ->schedule(
+                from: new DateTimeImmutable('2027-02-01T08:00:00+00:00'),
+                until: new DateTimeImmutable('2027-02-01T23:00:00+00:00'),
+            )
+            ->action('Service status', 'https://status.example.com', newTab: true),
+    ]);
+```
+
+## 4. Independent dismissal for each campaign
+
+```php
+AnnouncementBar::make('campaigns')
+    ->controls()->dismissal('message', 'local')
+    ->messages([
+        Announcement::make('spring', 'Spring planning is open.')->revision('2'),
+        Announcement::make('summer', 'Build your next summer campaign.'),
+    ]);
+```
+
+Increment a message revision to show an updated message again. A whole-bar
+dismissal requires a new bar revision or reset/open command instead.
+
+## 5. Branded light/dark announcement
+
+```php
+AnnouncementBar::make('brand')
+    ->global()->messages([
+        Announcement::make('identity', 'Your brand has room to stand out.')
+            ->colors('#d8f999', '#3d6300')
+            ->darkColors('#20360f', '#80cd00')
+            ->icon('hugeicons-sparkles'),
+    ]);
+```
+
+## 6. A fixed launch deadline
+
+```php
+AnnouncementBar::make('launch')
+    ->messages([
+        Announcement::make('launch-clock', 'The new workspace opens in')
+            ->tone('inverted')
+            ->countdown(new DateTimeImmutable('2027-03-01T09:00:00+00:00'), 'Time until opening')
+            ->schedule(until: new DateTimeImmutable('2027-03-01T09:00:00+00:00')),
+    ]);
+```
+
+The deadline is stable across renders; the schedule removes the message at
+opening. Do not rely on a browser countdown to run a business operation.
+
+## 7. An on-demand inline bar
+
+```php
+AnnouncementBar::make('onboarding')
+    ->initiallyOpen(false)->autoPlay(false)
+    ->messages([
+        Announcement::make('next-step', 'Ready to invite your teammates?')
+            ->action('Team settings', '/team'),
+    ]);
+```
+
+Render its Livewire owner as described in the overview, then open it:
+
+```js
+window.dispatchEvent(new CustomEvent('flex-announcements-command', {
+  detail: { id: 'onboarding', command: 'open' },
+}));
+```
+
+## 8. Permission-aware source without display caching
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+AnnouncementBar::make('operator-news')
+    ->messages(fn (): array => [
+        Announcement::make('reports', 'The operations summary is available.')
+            ->visible(fn (): bool => Gate::allows('view-operations'))
+            ->action('Open summary', '/operations'),
+    ])
+    ->listen(['operator-permissions-changed']);
+```
+
+The source is reevaluated on refresh. The destination must enforce its own
+permission too. For database feeds, implement the provider contract in
+[Providers and events](/docs/announcements/live-updates).

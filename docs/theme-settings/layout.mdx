@@ -1,0 +1,154 @@
+---
+title: "Layout"
+description: "Classic/Inset frames, all three navigation layouts, sidebar behavior, breadcrumbs and content widths."
+icon: "panels-top-left"
+---
+
+## Panel frame and navigation are separate
+
+`shell_layout` selects `classic` (default) or `inset`. Classic uses the ordinary
+panel frame. Inset removes the sidebar's separating edge and places the main
+surface inside an inset rounded frame on desktop. Narrow screens use the
+compact native layout without the desktop outside gutter.
+
+Both shells work with Sidebar, Topbar, and Sidebar + topbar. Shell choice does
+not enable navigation, grant resource access or override `navigation(false)`.
+
+**Override panel layout** (`customize_layout`, default `false`) controls whether
+the saved navigation selection replaces the native panel configuration.
+
+| Picker option | `navigation` | `topbar` |
+| --- | --- | --- |
+| Sidebar | `sidebar` | `false` |
+| Topbar | `top` | `true` |
+| Sidebar + topbar | `sidebar` | `true` |
+
+The UI-only key `layout_variant` is not a portable setting. Configure the real
+keys above. Top navigation always requires its topbar.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+
+FlexThemePlugin::make()->settingsOverrides([
+    'shell_layout' => 'inset',
+    'customize_layout' => true,
+    'navigation' => 'sidebar',
+    'topbar' => true,
+]);
+```
+
+Set `customize_layout` to `false` to let native `topNavigation()` / `topbar()`
+choose navigation again. The shell remains an independent preference.
+
+## Desktop sidebar
+
+| Visible choice | Key value | Behavior |
+| --- | --- | --- |
+| Keep expanded | `fixed` | Disable desktop collapsing. |
+| Collapse to icons | `icons` | Collapse to a compact icon rail; native toggle reopens it. |
+| Hide completely | `hidden` | Collapse the entire desktop sidebar; native toggle reopens it. |
+
+The editor offers these **three** choices. There is no Auto tile. The stored/PHP
+default `sidebar_collapse: 'inherit'` remains supported and derives the visible
+choice from the native panel flags. It does not mean that Filament always
+defaults to icon collapse. Reset Layout restores inheritance.
+
+Saving an explicit mode applies its initial expanded/collapsed state. Normal
+subsequent toggle interactions remain native. The choices only apply when the
+panel has a desktop sidebar; top navigation hides them. Mobile retains its
+native drawer and trigger.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'sidebar_collapse' => 'icons',
+    'sidebar_groups_collapsible' => false,
+]);
+```
+
+`sidebar_groups_collapsible` accepts `true`, `false`, or `null` (default: inherit
+native `collapsibleNavigationGroups()`). An individual native group with
+`collapsible(false)` remains fixed. Native sidebar widths and navigation/resource
+permissions stay in your application PHP.
+
+## Breadcrumbs
+
+`breadcrumbs` accepts `true`, `false`, or `null` (default: inherit the panel).
+Turning it on permits the breadcrumbs each Page supplies; it does not invent a
+breadcrumb trail for pages that have none. Native navigation-hierarchy settings
+are retained.
+
+```php
+FlexThemePlugin::make()->settingsOverrides(['breadcrumbs' => false]);
+```
+
+## Content width
+
+`max_content_width` accepts `inherit` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`,
+`5xl`, `6xl`, `7xl`, or `full`. It sets the panel's default content bound.
+**An explicit width on a particular Page wins over that panel default.**
+Top chrome and page-header dividers remain full width; bounded body content does
+not shrink the entire toolbar. This works in Classic and Inset.
+
+```php
+use Filament\Support\Enums\Width;
+
+// In the theme registration: global default.
+FlexThemePlugin::make()->settingsOverrides(['max_content_width' => '7xl']);
+
+// Inside a native Page class: this page keeps its own width.
+// protected Width|string|null $maxContentWidth = Width::Large;
+```
+
+For a complete Page declaration:
+
+```php
+use Filament\Pages\Page;
+use Filament\Support\Enums\Width;
+
+class FocusedSettings extends Page
+{
+    protected string $view = 'filament.pages.focused-settings';
+    protected Width|string|null $maxContentWidth = Width::Large;
+}
+```
+
+Theme Settings itself declares `Width::SixExtraLarge` for its content. It remains
+bounded even if other pages use the panel's Full width default.
+
+## User menu
+
+`user_menu_enabled` accepts `true`, `false`, or `null` (default: inherit).
+`user_menu_position` accepts `inherit` (default), `topbar`, or `sidebar`.
+The position picker appears only when the menu is enabled, and unavailable
+locations are disabled. A missing location falls back to the native viable one.
+These preferences never re-enable a menu denied by the native panel's
+`userMenu(false)` or authorization closure.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'user_menu_enabled' => true,
+    'user_menu_position' => 'sidebar',
+]);
+```
+
+## Sticky topbar and density
+
+| Key | Default | Accepted values / scope |
+| --- | --- | --- |
+| `sticky_topbar` | `true` | Boolean; standalone topbar only, including navigation-disabled topbars. |
+| `spacing` | `24` | `16`, `24`, `32` px. |
+| `row_height` | `44` | `40`, `44`, `52` px. |
+
+The sticky control is shown only when the current/draft layout has a standalone
+topbar. Combined sidebar/header layouts keep their own native positioning.
+Page spacing and table row height are independent.
+
+```php
+FlexThemePlugin::make()
+    ->stickyTopbar(false)
+    ->settingsOverrides(['spacing' => 16, 'row_height' => 40]);
+```
+
+The dedicated `stickyTopbar()` override locks the editor and takes precedence
+over the matching general preference override. Save layout changes before
+judging the resulting navigation structure.

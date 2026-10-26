@@ -1,0 +1,161 @@
+---
+title: "Providers and events"
+description: "Dynamic sources, polling, scoped caching, refresh commands and browser events."
+icon: "radio"
+---
+
+## Dynamic messages
+
+`messages()` accepts an iterable or a closure. Closures run through Laravel's
+container and can receive `AnnouncementBar $bar` or injected services. For a
+reusable source, implement the provider contract:
+
+```php
+namespace App\Announcements;
+
+use Flex\Theme\Announcements\Announcement;
+use Flex\Theme\Announcements\AnnouncementBar;
+use Flex\Theme\Contracts\AnnouncementProvider;
+use Illuminate\Support\Facades\Gate;
+
+final class WorkspaceAnnouncements implements AnnouncementProvider
+{
+    public function messages(AnnouncementBar $bar): iterable
+    {
+        yield Announcement::make('welcome', 'Welcome back to your workspace.');
+
+        if (Gate::allows('view-workspace-reports')) {
+            yield Announcement::make('reports', 'Your workspace reports are ready.')
+                ->tone('info')
+                ->action('Open reports', '/reports');
+        }
+    }
+}
+```
+
+```php
+use App\Announcements\WorkspaceAnnouncements;
+use Flex\Theme\Announcements\AnnouncementBar;
+
+AnnouncementBar::make('workspace-feed')
+    ->provider(WorkspaceAnnouncements::class)
+    ->controls()
+    ->listen(['workspace-announcements-updated']);
+```
+
+Register the bar with the panel and choose a placement. Messages must be
+`Announcement` instances with unique IDs; at most 50 source entries are accepted,
+including entries later filtered by visibility. Calling `messages()` clears an
+earlier provider. A later `provider()` becomes the active source.
+
+Your source owns database filtering, tenant scope and access checks. Do not send
+unfiltered sensitive messages and try to hide them with CSS. The Livewire owner
+requires an authenticated user who can access its panel, but that is not a
+replacement for provider-level authorization.
+
+## Refresh when something changes
+
+Dispatch the configured Livewire event after an authorized application change:
+
+```php
+// In the Livewire component that changed the announcement source.
+$this->dispatch('workspace-announcements-updated');
+```
+
+Or refresh a bar from browser/application UI:
+
+```js
+window.dispatchEvent(new CustomEvent('flex-announcements-refresh', {
+  detail: { id: 'workspace-feed' },
+}));
+
+// Omit id to refresh all rendered bars.
+window.dispatchEvent(new CustomEvent('flex-announcements-refresh'));
+```
+
+`listen()` also accepts native Livewire/Echo event names or a closure returning
+them. Your application supplies Echo, channel authentication and the event
+transport. Subscriptions are resolved when the owner mounts; remount when a
+tenant change alters channel identifiers. This feature does not install a push
+server or broadcast database changes automatically.
+
+## Optional polling and caching
+
+```php
+AnnouncementBar::make('workspace-feed')
+    ->provider(WorkspaceAnnouncements::class)
+    ->poll(30)
+    ->cache(60, key: 'workspace-feed-v2')
+    ->revision('2');
+```
+
+Polling is in **seconds**, accepts 10–3600, and is disabled by default.
+`poll(null)` disables it. Polling uses native visible-owner Livewire polling.
+Caching is disabled by default and accepts 1–86400 seconds or `null` to disable.
+Polling respects the display cache TTL; a 30-second poll does not guarantee a
+new source query when cached for 60 seconds.
+
+Cache keys always include panel, user, tenant and locale scope, bar ID, revision
+and your optional namespace. `cache()` also accepts a namespace closure receiving
+`AnnouncementBar $bar` and `string $scope`. A namespace does not remove these
+scope boundaries. Cache stores resolved display arrays in Laravel's configured
+cache; it does not cache executable handlers.
+
+Explicit refresh and configured events invalidate the current scope. Change a
+revision or namespace when deploying changed cached content. For frequently
+changing permissions, leave caching off or include an application permission
+version in the namespace. Server actions always resolve current message
+eligibility again instead of trusting a cached/client-supplied ID.
+
+`cacheKey($scope)` and `forgetCachedMessages($scope)` are available for code that
+already owns the correct scope. For ordinary UI changes prefer the refresh
+event, which refreshes the mounted owner's own scope.
+
+## Browser commands
+
+```js
+window.dispatchEvent(new CustomEvent('flex-announcements-command', {
+  detail: { id: 'workspace-feed', command: 'select', messageId: 'reports' },
+}));
+```
+
+| Command | Behavior |
+| --- | --- |
+| `open` | Open the bar and clear whole-bar dismissal; message dismissals remain. |
+| `close` | Close the current owner without recording user dismissal. |
+| `reset` | Clear the owner's scoped bar/message dismissals and reopen. |
+| `pause`, `play` | Set manual playback state. Other pause conditions still apply. |
+| `next`, `previous` | Move between eligible messages. |
+| `refresh` | Refresh the source on the server. |
+| `select` | Select the eligible `messageId`; can wait for a refreshed source. |
+
+Commands require the target bar `id`. They control presentation; they do not
+authorize access or change server schedules. Selecting a hidden, dismissed or
+inactive message does not make it eligible.
+
+## Observe events
+
+```js
+window.addEventListener('flex-announcement-change', event => {
+  const { id, messageId, index } = event.detail;
+  // Connect your application's analytics or UI here.
+});
+```
+
+Events bubble from the rendered owner. Every payload includes `id` and the
+relevant `messageId`; some events also include the data below.
+
+| Event | Extra data / timing |
+| --- | --- |
+| `flex-announcement-ready` | Owner initialized. |
+| `flex-announcement-change` | New current message; zero-based `index`. |
+| `flex-announcement-pause` | Manual pause button changed; `paused`. |
+| `flex-announcement-dismiss` | User dismissed the current message/bar. |
+| `flex-announcement-action` | Message action activated. |
+| `flex-announcement-countdown-end` | Deadline reached for a message in this owner. |
+| `flex-announcement-error` | Failed operation; `operation` and relevant message ID. |
+
+Client events are not an authoritative audit trail. Owners release subscriptions,
+timers and observers when removed. An inactive placement initializes when it
+gets a layout width; ordinary below-the-fold content keeps its owner. If the
+runtime fails to load, server-rendered text and ordinary links remain available.

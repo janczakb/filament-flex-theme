@@ -1,0 +1,153 @@
+---
+title: "Appearance, rotation and dismissal"
+description: "Colors, timing, schedules, actions, remembered dismissal and accessible behavior."
+icon: "sliders-horizontal"
+---
+
+## Semantic and custom colors
+
+`tone()` accepts `neutral`, `inverted`, `primary`, `info`, `success`, `warning`,
+or `danger`. Neutral follows the theme surface; inverted provides the opposite
+contrast. Semantic tones use theme/native status colors.
+
+```php
+use Flex\Theme\Announcements\Announcement;
+
+Announcement::make('maintenance', 'Maintenance is scheduled for tonight.')
+    ->tone('warning')
+    ->icon('hugeicons-clock-01');
+
+Announcement::make('brand-story', 'A little more room for your next big idea.')
+    ->colors('#6c43bf', '#ffffff')
+    ->darkColors('#38236f', '#eee7ff');
+```
+
+Custom colors require six-digit HEX. If foreground is omitted, the package
+chooses black or white from the background luminance. Light and dark pairs are
+independent; define both when both modes need an explicit palette. An omitted
+pair uses the bar's theme/tone fallback. Per-message colors do not rewrite the
+panel's semantic palette. `icon(null)` omits the icon.
+
+## Links and server actions
+
+An announcement can have one labeled URL **or** one server handler, not both.
+
+```php
+Announcement::make('docs', 'Explore the new workspace guide.')
+    ->action('Read the guide', '/guide', newTab: true);
+```
+
+Deferred URLs and callbacks can receive the current announcement through Laravel
+container invocation:
+
+```php
+use Filament\Notifications\Notification;
+use Flex\Theme\Announcements\AnnouncementBar;
+use Illuminate\Support\Facades\Gate;
+
+Announcement::make('review-queue', 'Your review queue is ready.')
+    ->visible(fn (): bool => Gate::allows('view-review-queue'))
+    ->action('Show summary', handler: function (Announcement $announcement, AnnouncementBar $bar): void {
+        Gate::authorize('view-review-queue');
+        Notification::make()->title('Review summary ready')->info()->send();
+    });
+```
+
+The component re-resolves a currently visible and scheduled message before a
+server callback. Your callback must still authorize its business operation.
+Visibility alone does not authorize writes. Server action failures show the
+action-error feedback and emit an error event.
+
+URL schemes can be HTTP(S), `mailto:`, `tel:`, absolute local paths, query strings
+or fragments. Protocol-relative/executable URLs, whitespace/control characters
+and backslashes are rejected. Action labels contain 1–120 characters.
+
+## Priority and initial selection
+
+`priority(10)` puts a message ahead of a lower-priority message. Bars sort by
+descending priority. `initialIndex(0)` selects the initial active slide by its
+zero-based index; an oversized index is bounded to the available messages.
+Choose explicit priorities when ordering must be unambiguous.
+
+## Schedules and countdowns
+
+```php
+Announcement::make('launch', 'The next release arrives in')
+    ->countdown(
+        new DateTimeImmutable('2027-01-15T09:00:00+00:00'),
+        'Time until release',
+    )
+    ->schedule(
+        from: new DateTimeImmutable('2027-01-10T00:00:00+00:00'),
+        until: new DateTimeImmutable('2027-01-15T10:00:00+00:00'),
+    );
+```
+
+Use a stable application deadline, not `now()->addMinutes(5)` on every refresh.
+Start is inclusive; end is exclusive. When both dates are given, end must follow
+start. Start/end eligibility updates in the active browser without a scheduled
+background job.
+
+A countdown reaching zero does **not** automatically hide its message. Configure
+an end schedule if it should disappear. `onCountdownEnd()` is an optional
+browser-triggered server callback, not a guaranteed scheduler. It can run again
+after a remount or in another browser. Make business effects idempotent and use
+Laravel jobs/scheduling for authoritative deadlines.
+
+```php
+use Illuminate\Support\Facades\Log;
+
+AnnouncementBar::make('release-clock')
+    ->onCountdownEnd(function (Announcement $announcement): void {
+        Log::info('Release countdown reached', ['announcement' => $announcement->id]);
+    })
+    ->messages([
+        Announcement::make('release', 'Release starts in')
+            ->countdown(new DateTimeImmutable('2027-01-15T09:00:00+00:00')),
+    ]);
+```
+
+## Remembered dismissal
+
+```php
+AnnouncementBar::make('news')
+    ->dismissal('message', 'local')
+    ->revision('release-2')
+    ->messages([
+        Announcement::make('features', 'Discover what is new.')->revision('2'),
+        Announcement::make('policy', 'Please review the workspace policy.')
+            ->dismissible(false),
+    ]);
+```
+
+| Option | Meaning |
+| --- | --- |
+| Mode `bar` | Close remembers dismissal of the whole bar. |
+| Mode `message` | Close dismisses the current message and advances to an eligible one. |
+| Persistence `local` | Remember in this browser's local storage. |
+| Persistence `session` | Remember in this tab's session storage. |
+| Persistence `none` | Keep only this rendered owner's memory. |
+
+The default is `dismissal('bar', 'local')`. Keys include panel/user/tenant/locale
+scope, bar ID and bar revision. This is browser storage, not a cross-device
+acknowledgment system. When storage is unavailable, in-memory operation remains.
+A new bar revision resets that bar's stored dismissal namespace. A new message
+revision reintroduces that message in message-dismissal mode; it does not reopen
+an already dismissed whole bar.
+
+`dismissible(false)` on either the bar or message removes its close affordance.
+`onDismiss()` optionally receives a server callback after UI dismissal; failed
+callbacks do not turn browser storage into a durable acknowledgment. Your own
+backend must record any required acknowledgment and recheck authorization.
+
+## Accessible playback
+
+`label()` names the region. Messages use native links/buttons and labeled slide
+groups. Autoplay updates are quiet (`aria-live="off"`); paused/manual updates use
+polite announcements. Countdown text has a separate descriptive label and does
+not announce every tick. Native focus outlines remain visible.
+
+`pauseOnHover()`, `pauseOnFocus()` and `pauseOffscreen()` default to true. Reduced
+motion suppresses movement and pauses automatic rotation; manual controls remain
+available. Hidden tabs pause rotation. Only configure `poll()` when a server
+refresh is needed; ordinary local rotation does not request data per slide.

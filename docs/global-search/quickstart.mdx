@@ -1,0 +1,88 @@
+---
+title: "Quickstart"
+description: "Use the resources, pages and policies already registered in your Filament panel."
+icon: "rocket"
+---
+
+These examples assume FLEX Theme is installed and its theme assets are configured in your panel.
+
+## Enable the default search
+
+```php
+use Filament\Panel;
+use Flex\Theme\FlexThemePlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        ->globalSearch()
+        ->plugin(FlexThemePlugin::make());
+}
+```
+
+Search is enabled by default in the plugin. `FlexThemePlugin::make()->search()` explicitly selects that same default configuration. Enable or disable it in PHP; Theme Settings contains search preferences, not an activation switch.
+
+## Make a resource searchable
+
+```php
+use Illuminate\Database\Eloquent\Model;
+
+// In your CustomerResource:
+protected static ?string $recordTitleAttribute = 'name';
+
+public static function getGloballySearchableAttributes(): array
+{
+    return ['name', 'email'];
+}
+
+public static function getGlobalSearchResultDetails(Model $record): array
+{
+    return ['Email' => $record->email];
+}
+```
+
+Register the resource with the panel as usual. Its native global-search eligibility and policies still apply. The theme does not make an unregistered resource available automatically.
+
+## Add explicit configuration
+
+```php
+use Flex\Theme\Search\SearchConfiguration;
+
+FlexThemePlugin::make()->search(
+    SearchConfiguration::make()
+        ->placeholder('Search your workspace…')
+        ->settings([
+            'search_page_size' => 25,
+            'search_pagination' => 'infinite',
+            'search_virtualization' => true,
+        ])
+);
+```
+
+Values passed through `SearchConfiguration::settings()` are validated and locked in the corresponding Theme Settings controls. Omit a value when administrators should be able to change it.
+
+## Open search from your own button
+
+```html
+<button type="button" x-on:click="$dispatch('flex-search-open')">
+    Search workspace
+</button>
+```
+
+```js
+window.dispatchEvent(new CustomEvent('flex-search-open', {
+    detail: { query: 'Olivia' },
+}));
+```
+
+The event also accepts a registered `source` ID. Use a custom source's stable ID or `NativeResourceSource::make(CustomerResource::class)->id()` rather than hardcoding the internal resource hash.
+
+## Restore native Filament search
+
+```php
+FlexThemePlugin::make()->search(false);
+```
+
+This disables the FLEX replacement. To disable native search as well, configure the panel with `->globalSearch(false)`. If you want FLEX commands without a native provider, see [Commands](/docs/global-search/commands).
+
+Next: [resources](/docs/global-search/resources), [actions](/docs/global-search/actions), or the complete [settings reference](/docs/global-search/configuration).

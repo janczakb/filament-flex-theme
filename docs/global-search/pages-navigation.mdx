@@ -1,0 +1,83 @@
+---
+title: "Pages, groups and aliases"
+description: "Discover registered pages and organize search without changing sidebar navigation."
+icon: "navigation"
+---
+
+## Automatic page discovery
+
+Registered pages must pass their native `canAccess()` check. Pages that do not register navigation are omitted unless you explicitly include them. Resource categories keep their own native eligibility rules.
+
+```php
+SearchConfiguration::make()->discover(pages: true, resources: true);
+```
+
+## Include a hidden registered page
+
+```php
+SearchConfiguration::make()->includePages([
+    BillingSettings::class,
+]);
+```
+
+The page must still be registered with the panel and pass access checks. `includePages()` is not an authorization bypass and does not register a new route.
+
+## Add aliases
+
+```php
+SearchConfiguration::make()->aliases([
+    CustomerResource::class => ['clients', 'accounts', 'people'],
+    BillingSettings::class => fn () => [__('Invoices'), __('Payments')],
+]);
+```
+
+Aliases help match navigation labels. They do not add database columns to a resource's searchable attributes.
+
+## Define search-only groups
+
+```php
+SearchConfiguration::make()
+    ->groups([
+        CustomerResource::class => 'Sales',
+        OrderResource::class => 'Sales',
+        BillingSettings::class => 'Finance',
+    ])
+    ->searchGroups(true);
+```
+
+Search grouping does not rename or move the native sidebar groups. `searchGroups(false)` stops group labels contributing to navigation matching.
+
+## Bounded fuzzy matching
+
+```php
+SearchConfiguration::make()->fuzzy(true, distance: 1);
+```
+
+Accepted distances are `1` and `2`. This is bounded matching for catalog labels/aliases, not fuzzy SQL search of every record. Native resource query matching remains native. Long or unsupported fuzzy text falls back to ordinary matching rather than unrestricted edit-distance work.
+
+## Limit the navigation catalog
+
+```php
+SearchConfiguration::make()->navigationLimit(50);
+```
+
+The accepted range is `1` to `200`. This is separate from record page size and native resource result limits.
+
+## Modify navigation items
+
+```php
+use Flex\Theme\Search\SearchItem;
+use App\Filament\Pages\LegacyTools;
+
+SearchConfiguration::make()->modifyNavigationUsing(
+    function (SearchItem $item, string $origin): ?SearchItem {
+        if ($origin === LegacyTools::class) {
+            return null;
+        }
+
+        return $item;
+    }
+);
+```
+
+`$origin` is the registered page's class name for a page item, or the source ID for a source item. Return a `SearchItem` or `null`. Source/page access is still checked before an item is presented. For business access rules, prefer [authorization](/docs/global-search/permissions) rather than filtering navigation items.

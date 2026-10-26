@@ -1,0 +1,147 @@
+---
+title: "PHP API reference"
+description: "Configuration methods, extension contracts and result types for FLEX Search."
+icon: "code"
+---
+
+All search classes below use the `Flex\Theme\Search` namespace. Shortcut classes use `Flex\Theme\Keyboard`. These are the application-facing configuration/extension APIs; rendering internals and signed transport tokens should remain implementation details.
+
+## SearchConfiguration
+
+Start with `SearchConfiguration::make()`. Fluent methods return the configuration instance.
+
+| Method | Default / contract |
+| --- | --- |
+| `enabled(bool $enabled = true)` | Enable the FLEX replacement in PHP; default true. No saved/UI activation switch. |
+| `authorize(bool\|Closure $condition)` | Additional feature access gate; callback receives `user`, `panel`. |
+| `settings(array $settings)` | Validate and lock selected saved search preferences. |
+| `settingsTab(bool $enabled = true)` | Show the Search settings tab when the feature is enabled. |
+| `discover(bool $pages = true, bool $resources = true)` | Automatic discovery of registered eligible pages/resources. |
+| `exclude(array $classes)` | Exclude page/resource classes from automatic discovery and the default native root adapter. |
+| `panelExclusions(array $classes)` | Map destination panel IDs to excluded class lists. |
+| `includePages(array $classes)` | Include authorized registered pages that hide their navigation entry. |
+| `pagePanels(array\|string $panels, array $except = [])` | Array of IDs or `'*'`; default current panel. |
+| `resourcePanels(array\|string $panels, array $except = [])` | Independent resource-panel selection. |
+| `configureResourcesUsing(?Closure $callback)` | Configure each automatic native source; receives `source`, `resource`, `panel`. |
+| `rootRecords(bool $enabled = true, bool $preload = false)` | Enable native root record searches; no empty-query preload by default. |
+| `groups(array $groups)` | Class-to-search-group map; labels may be deferred. |
+| `aliases(array $aliases)` | Class-to-alias map; alias arrays may be deferred. |
+| `searchGroups(bool $enabled = true)` | Include group labels in navigation matching. |
+| `fuzzy(bool $enabled = true, int $distance = 1)` | Optional bounded catalog matching; distance 1 or 2. |
+| `navigationLimit(int $limit)` | Catalog limit 1–200; default 50. |
+| `sources(array $sources)` | Replace the explicit source list with unique `SearchSource` instances. |
+| `commands(array $commands)` | Replace the custom command list with unique `SearchCommand` instances. |
+| `builtInCommands(array $commands)` | Allowed values: theme, sidebar, profile, settings, logout. |
+| `tenants(bool $enabled = true, ?Closure $using = null)` | Automatic tenant source, optionally backed by an authorized paginator callback. |
+| `modifyNavigationUsing(Closure $callback)` | Receives `SearchItem $item`, `string $origin`; return item or null. |
+| `searchUsing(Closure $callback, bool $mergeWithNative = true)` | Root callback receives `query`; return native `GlobalSearchResults`. |
+| `placeholder(string\|Closure\|null $placeholder)` | Input placeholder; null uses translation default. |
+| `fullscreen(bool $enabled = true)` | Explicit full-screen desktop mode; initial default false. |
+| `commandsWithoutNativeSearch(bool $enabled = true)` | Explicitly allow FLEX without a native provider; initial default false. |
+| `history(bool $enabled = true)` | Enable and lock the history preference. |
+| `favorites(bool $enabled = true)` | Enable and lock the favorites preference. |
+| `collections(?SearchCollectionStore $store)` | Session store by default; null restores it. |
+| `mediaUsing(Closure $callback)` | Receives native `GlobalSearchResult`; return `ResultMedia` or null. |
+| `resultView(string $view)` | Default `flex-theme::search-result`. |
+| `emptyView(?string $view, string $context = 'results')` | results, discover, category, recent, favorites. |
+| `stateView(?string $view, string $context = 'loading')` | loading, pending, error. |
+| `categories(array $categories)` | Replace the explicit `SearchCategory` adapter list. |
+| `diagnostics(?Closure $callback)` | Receive `metrics`; null disables the callback. |
+
+Collection-registration methods replace their respective explicit list. Pass the complete list once, or deliberately merge it in your own configuration factory.
+
+Inspection methods include `defaults()`, `lockedSettings()`, `getSources()`, `getCategories()`, `getCommands()`, `getIncludedPages()`, `getResultView()`, `getEmptyView()`, `getStateView()`, `panelIds()` and the corresponding boolean accessors. `resourceSource($class)` builds the configured automatic resource source. Do not mutate authorization-sensitive runtime snapshots globally between users.
+
+See [Configuration](/docs/global-search/configuration) for every saved search key and allowed value.
+
+## NativeResourceSource
+
+```php
+NativeResourceSource::make(CustomerResource::class);
+```
+
+| Method | Contract |
+| --- | --- |
+| `id()` | Stable generated source ID; derive it rather than hardcoding a hash. |
+| `authorize(bool\|Closure $condition)` | Additional access gate; receives `user`, `panel`. |
+| `root(bool $enabled = true, bool $preload = false)` | Add this source to root search and optional preload. |
+| `limit(int $limit)` | Source page upper bound 1–100; still bounded by requested page size. |
+| `aliases(array\|Closure $aliases)` | Additional source aliases. |
+| `group(string\|Closure\|null $group)` | Source search group. |
+| `queryUsing(Closure $callback)` | Receives `query`, `request`; narrow/eager-load the existing query. |
+| `filters(array $options, Closure $apply)` | Whitelisted choices; apply callback receives `query`, `filters`, `request`. |
+| `modifyResultUsing(Closure $callback)` | Receives `result`, `record`, `request`; return compatible `MediaSearchResult` or null. |
+| `modifyActionsUsing(Closure $callback)` | Receives `actions`, `record`, `request`; return native action/action-group array. |
+| `modifyNavigationActionsUsing(Closure $callback)` | Receives `actions`, `source`, `resource`; return source-level actions. |
+| `recordActions(bool $enabled = true)` | Automatic native View/Edit/Delete additions. |
+| `cursorPagination(bool $enabled = true)` | Prefer cursor pages; default true. |
+| `usesCursorPagination()` | Inspect cursor preference. |
+| `automaticParents(bool $enabled = true)` | Resolve native parent-resource chain automatically. |
+| `parentUsing(Closure $callback)` | Provide an authorized parent model or map of parent resource classes to models. |
+
+The source also implements `metadata()`, `canAccess()`, `page(SearchRequest)` and `navigationActions()`. Registered resources remain subject to native global-search eligibility and policies.
+
+## CallbackSearchSource
+
+`CallbackSearchSource::make('customers')` accepts a stable source ID. Its fluent methods are `label(string|Closure)`, `icon(string)`, `aliases(array)`, `authorize(bool|Closure)`, `resolveUsing(Closure)`, `filters(array)` and `root(bool $condition = true, bool $preload = false)`.
+
+`resolveUsing()` receives `request`, `query` and `context`. It must return a `SearchPage` within the requested page-size limit. `authorize()` receives `user` and `panel`. Labels are evaluated on demand; aliases are bounded to 30 entries.
+
+## SearchCommand
+
+`SearchCommand::make(string $id, string|Closure $label)` creates a command.
+
+| Method | Contract |
+| --- | --- |
+| `action(Action\|Closure $action)` | Native action or deferred action factory. |
+| `authorize(bool\|Closure $access)` | Additional command access check. |
+| `aliases(array $aliases)` | Bounded command aliases. |
+| `filterUsing(Closure $filter)` | Custom match predicate. |
+| `context(?string $source)` | Select one source; null uses root unless another rule applies. |
+| `anyContext(bool $enabled = true)` | Show in any context. |
+| `withinPath(array $segments)` | Match an exact full context route. |
+| `opens(string $source, array\|Closure $data = [])` | Open a registered source with validated context data. |
+| `preload(bool $condition = true)` | Include on empty query; default true. |
+| `closeOnSelect(bool $condition = true)` | Default true; `opens()` sets false. |
+| `sort(int $sort)` | Command order, default 0. |
+| `icon(string $icon)` | Registered Blade icon name. |
+
+Command callbacks can receive `user`, `panel`, `context` (string), `trail` (`SearchContext`) and `query`. Match/authorization callbacks are evaluated when building a command result; use the native Action's own authorization and service-level rules for sensitive execution.
+
+## Results and requests
+
+- `SearchRequest(SearchContext $context, string $query = '', int $page = 1, int $perPage = 25, ?string $cursor = null)` is immutable. Query length is bounded to 1000 characters, page to 1–10000, page size to 10/25/50/100 and cursor to 4096 characters.
+- `SearchPage(array $items, bool $hasMore = false, ?string $nextCursor = null)` is immutable. Items are native Filament `GlobalSearchResult` instances; at most 100 per page.
+- `MediaSearchResult` extends a native result with optional `media`, hydrated `record`, stable `identity` and `recordSource`.
+- `SearchItem` extends `MediaSearchResult` with `sourceId`, `primaryAction`, `closeOnSelect`, `icon`, `contextData` and `group` for command/context/navigation semantics.
+
+Use `identity` when distinct custom records share a URL. Do not fabricate native `recordSource` identities or signed references to bypass the native adapter; implement a properly authorized custom source/action instead.
+
+## Media
+
+`ResultMedia::avatar(?string $url = null, ?string $thumbnailUrl = null)`, `image(string $url, ?string $thumbnailUrl = null)` and `gravatar(string $email, string $default = 'mp')` create presentation metadata. Chain `initials(string)`, `alt(string)` and `srcset(array $sources)` as needed. See [Media](/docs/global-search/media) for URL and thumbnail bounds.
+
+## SearchCategory adapter
+
+`SearchCategory::make($id)` supports `label()`, `icon()`, `layout()`, `sort()`, `limit()`, `visible()`, `source()`, `results()`, `suggestions()`, `browse()`, `mediaUsing()`, `favorites()`, `actions()` and `emptyView()`.
+
+Category IDs are lowercase identifiers up to 40 characters. Reserved names include all, recent, favorites, navigation and commands. Layout is tiles/list/chips; the collection limit is clamped to 1–5000, but large data should use bounded source pagination. `browse()` receives `page`, `perPage` and returns an authorized paginator or bounded iterable.
+
+## Extension interfaces
+
+- `SearchSource`: `id()`, `metadata()`, `canAccess()`, `page(SearchRequest): SearchPage`.
+- `SearchSourceActions` extends `SearchSource` with `navigationActions(): array`.
+- `SearchCollectionStore`: bounded scoped `read()` and `write()`.
+- `AtomicSearchCollectionStore`: adds an atomic scoped `mutate()` callback.
+- `Flex\Theme\Contracts\CanUseFlexSearch`: User method `canUseFlexSearch(Panel): bool`.
+- `Flex\Theme\Contracts\SearchableInFlex`: Page/Resource static method `canUseFlexSearch(): bool`.
+
+## ShortcutConfiguration
+
+`ShortcutConfiguration::make()` supports `enabled(bool)`, `settings(bool)`, `footer(bool)`, `bindings(string $action, array|string|null $bindings)`, `search()`, `sidebar()`, `theme()` and `themeTransition(string)`.
+
+Search-related binding actions are search, sidebar, theme, next, previous, activate and back. Workspace/table bindings additionally include help, undo, navigation, row_next, row_previous, row_open, row_select, page_select, page_previous, page_next and filters. Up to four alternatives are accepted per action. `defaults()`, `resolve()`, `isLocked()` and `canToggleSidebar()` expose the effective configuration. See [Keyboard](/docs/global-search/keyboard) for normalization, platform behavior and the UI recorder.
+
+The full workspace API, table controls, navigation sequences and custom commands
+are documented in [Keyboard controls](/docs/workspace/keyboard) and
+[Table shortcuts and selection](/docs/workspace/table-shortcuts).

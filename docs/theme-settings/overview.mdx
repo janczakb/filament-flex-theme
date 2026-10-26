@@ -1,0 +1,99 @@
+---
+title: "Theme Settings"
+description: "Install FLEX Theme and understand saved settings, previews, PHP configuration and panel-wide changes."
+icon: "sliders-horizontal"
+---
+
+Theme Settings is the administrator interface for the current panel. It controls
+appearance without replacing native Filament forms, navigation or permissions.
+Saved values apply to everyone using that panel; they are not a personal profile
+or an independent settings record for each tenant.
+
+## Installation
+
+Use a Filament 5 application with PHP 8.3 or later, a native theme build and a
+purchased FLEX Theme license. The current implementation is verified against
+Filament 5.10.2.
+
+```shell
+composer config repositories.flex-theme composer https://license.bjanczak.com/v1/flex-theme/composer/
+composer config --auth http-basic.license.bjanczak.com license YOUR_LEMON_LICENSE_KEY
+composer require flex/theme:^0.1
+```
+
+Keep Composer authentication in your local credentials or CI secrets.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+
+return $panel
+    ->plugin(FlexThemePlugin::make())
+    ->viteTheme('resources/css/filament/admin/theme.css');
+```
+
+If needed, generate the native theme with `php artisan make:filament-theme admin`.
+Keep its generated imports and add:
+
+```css
+@import '../../../../vendor/flex/theme/resources/css/theme.css';
+@source '../../../../vendor/flex/theme/src/**/*.php';
+@source '../../../../vendor/flex/theme/resources/views/**/*.blade.php';
+```
+
+```shell
+php artisan vendor:publish --tag=flex-theme-source --force
+php artisan migrate
+npm run build
+```
+
+The package ships built JavaScript. Republish its runtime and rebuild your app's
+theme after upgrades. Configure Laravel's public disk and storage link for
+branding uploads. Define the `manage-flex-theme` gate described in
+[Panels and permissions](/docs/theme-settings/panels-permissions).
+
+## Settings tabs
+
+| Tab | What it controls |
+| --- | --- |
+| [Appearance](/docs/theme-settings/appearance) | Accent, Base tint, fonts, independent corner scales and available color modes. |
+| [Colors](/docs/theme-settings/colors) | Primary, success, warning, danger, info and gray palettes. |
+| [Brand](/docs/theme-settings/brand) | Workspace name, full/compact light/dark logos and favicon family. |
+| [Layout](/docs/theme-settings/layout) | Classic/Inset shell, navigation, desktop sidebar, breadcrumbs, user menu, width and density. |
+| [Details](/docs/theme-settings/details) | Body text size, motion, label case and theme-switch transition. |
+| [Search](/docs/global-search/configuration) | Search window, categories, history, favorites and result delivery. |
+| [Keyboard](/docs/workspace/keyboard) | Shortcut recording, platform preview and shortcut reference. |
+
+The page remembers its active tab in the `tab` query parameter: `appearance`,
+`colors`, `brand`, `layout`, `details`, `search`, or `keyboard`. Generate links
+through `ThemeSettingsPage::getUrl(['tab' => 'layout'])` instead of hard-coding a
+panel path. Search and Keyboard tabs are conditionally available; see
+[PHP configuration](/docs/theme-settings/configuration#hide-individual-feature-tabs).
+
+## Preview, save and reset
+
+Appearance controls preview changes on the settings page. **Save changes**
+validates and persists them for the current panel, then reloads the page so panel
+configuration and navigation reflect the saved values. Adding a font to the
+picker or changing a layout tile is not a separate automatic save.
+
+Filament warns before leaving with unsaved changes, including native SPA
+navigation. The save bar reflects the saved baseline.
+
+**Reset tab** changes that tab's draft preferences after confirmation.
+**Restore defaults** resets all preference tabs. Neither saves automatically.
+Both preserve workspace identity, branding files, the custom font library and
+PHP-enforced values. Brand is deliberately not a resettable preference tab.
+
+## Choose who owns configuration
+
+| Configuration | Result |
+| --- | --- |
+| `FlexThemePlugin::make()` | Saved panel preferences with an authorized settings page. |
+| `->settingsPage(false)` | Hide and deny the settings page; retain saved preferences. |
+| `->settingsOverrides([...])` | Enforce selected preferences; keep the rest editable. |
+| `->settings([...])` | Fully configure the theme in PHP and remove the settings page. |
+
+Read [PHP configuration](/docs/theme-settings/configuration) for precedence,
+feature switches, JSON transfer and a complete recipe. Read
+[Panels and permissions](/docs/theme-settings/panels-permissions) before enabling
+administration in a multi-panel or multi-tenant app.

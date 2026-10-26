@@ -1,0 +1,205 @@
+---
+title: Recover recent changes
+description: Add bounded, permission-aware recovery for explicitly configured models and fields.
+---
+
+Recovery is optional. Declare the models and columns that may be recovered; the
+feature does not automatically retain every model's attributes.
+
+Table selection/navigation is documented separately under
+[Table shortcuts and selection](/docs/workspace/table-shortcuts). Selecting a
+record alone creates no recovery entry. Only a supported, successfully committed
+data change can create one.
+
+## Enable recovery
+
+Run the package migrations with your deployment migrations before enabling recovery.
+They add a small receipt table used to prevent a committed recovery from executing
+twice. No record snapshots are stored in that table.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Recovery\RecoveryConfiguration;
+use Flex\Theme\Recovery\RecoveryProfile;
+
+FlexThemePlugin::make()->recovery(
+    RecoveryConfiguration::make()
+        ->window(15)
+        ->limits(records: 100, bytes: 131072, history: 20)
+        ->replaceSuccessFeedback()
+        ->profiles(
+            RecoveryProfile::make(Post::class)
+                ->fields(['title'])
+                ->operations(['edit', 'delete', 'restore']),
+        ),
+);
+```
+
+| Native action | Automatic recovery |
+| --- | --- |
+| `EditAction` | Declared columns |
+| `DeleteAction`, `DeleteBulkAction` | Models using `SoftDeletes` |
+| `RestoreAction`, `RestoreBulkAction` | Models using `SoftDeletes` |
+| Hard deletion, relation changes, custom business operations | Explicit `RecoveryOperation` adapter |
+| Saving an `EditRecord` page | Application integration required |
+
+Model keys and timestamp/deletion metadata are managed internally and cannot be
+included in `fields()`. Limits are enforced on the server. Oversized batches do
+not create recovery entries. Default native success feedback is retained unless
+`replaceSuccessFeedback()` is enabled.
+
+The bottom-center recovery notices use the theme's shared notification stack.
+The Undo action sits beside the message, preceded by its currently configured
+keyboard shortcut. Its primary progress bar follows the server deadline, including
+after a reload.
+Hover expands the stack; it does not extend the recovery deadline. Mod + Z applies
+to the latest available change outside text editing controls. Native text undo is
+preserved while typing.
+
+## Permissions and conflicts
+
+Each request rechecks the authenticated user, guard, panel, tenant, model connection
+and current model policy. The default inverse abilities are `update` for editing,
+`restore` for deleting and `delete` for restoring. A changed or missing record
+causes recovery to fail without overwriting newer data. A batch is recovered in one
+transaction or rejected as a whole.
+
+Tenanted applications must provide a scoped query:
+
+```php
+RecoveryProfile::make(Post::class)
+    ->fields(['title'])
+    ->queryUsing(fn ($query) => $query->where(
+        'team_id', filament()->getTenant()->getKey(),
+    ));
+```
+
+This query retains the model's other global scopes. Recovery reads use the primary
+connection. Use `authorizeUsing()` only when the application needs a different
+policy mapping; its callback must authorize the inverse operation with current data.
+
+## Extend recovery
+
+Implement `Flex\Theme\Recovery\RecoveryOperation` for an application-specific
+inverse and register the instance with `RecoveryConfiguration::operations()`.
+Allow its stable ID in the relevant profile's `operations()` list.
+
+The adapter implements `id()`, `supports()`, `capture()`, `confirm()`, `authorize()` and
+`recover()`. Confirmed data contains bounded JSON values and affected record keys.
+The server calls authorization and recovery inside the model connection's receipt
+transaction. A failed attempt does not consume the entry. Adapter code is registered
+in PHP; executable closures and model objects are not serialized into history.
+
+Adapters must handle relationship state, current policies and business conflicts.
+Database transactions cannot reverse an external email, payment or deleted file;
+these operations need an explicit application compensation strategy.
+
+## Storage and maintenance
+
+Snapshots are encrypted and expire after the configured window. History is capped
+per user, panel, guard and tenant. The default dedicated file cache is separate
+from the application's ordinary cache. Multi-node deployments should configure a
+shared cache supporting atomic locks, for example:
+
+```dotenv
+FLEX_THEME_RECOVERY_STORE=redis
+```
+
+Keep Laravel's scheduler running. The package schedules daily cleanup of expired
+receipts and snapshot files from its dedicated file cache. Cleanup can also run
+manually:
+
+```shell
+php artisan flex-theme:prune-recovery
+php artisan flex-theme:prune-recovery --database=tenant
+```
+
+For models on additional connections, schedule cleanup for those connections too.
+The recovery window accepts 5–120 seconds. Maximum configured bounds are 500 records,
+1 MiB per snapshot and 50 history entries. Expired entries are rejected even if
+physical cleanup has not run yet.
+
+## Complete configuration reference
+
+| API | Default | Accepted values / behavior |
+| --- | --- | --- |
+| `RecoveryConfiguration::make()` | Enabled configuration, no profiles | The feature is effective only with at least one profile. |
+| `enabled(bool = true)` | `true` | Temporarily disable without removing profiles. |
+| `window(int $seconds)` | `15` | 5–120 seconds. |
+| `limits(records:, bytes:, history:)` | 100 / 131072 / 20 | 1–500 records; 1024–1048576 bytes; 1–50 history entries. |
+| `profiles(RecoveryProfile ...$profiles)` | Empty | One profile per model class; duplicate model registration fails. |
+| `operations(RecoveryOperation ...$operations)` | Empty | Application adapters with unique IDs; built-in edit/delete/restore names are reserved. |
+| `replaceSuccessFeedback(bool = true)` | `false` | Opt in to replacing native success feedback with the recovery notice. |
+| `RecoveryProfile::make(ModelClass::class)` | Required model | Existing Eloquent model class. |
+| `fields(array $columns)` | None | 1–50 plain column names; no key/created-at/updated-at/deleted-at metadata. |
+| `operations(array $ids)` | edit/delete/restore | Explicit operation allowlist; a custom ID also needs its registered adapter. |
+| `queryUsing(Closure)` | Native scoped model query | Return a Builder for the same model and connection; required for tenants. |
+| `authorizeUsing(Closure)` | Native inverse Gate abilities | Receive current user, record and original operation ID; return permission for the inverse. |
+
+Even a delete-only profile needs a valid declared field allowlist. Metadata is
+captured separately. Snapshot limits are upper bounds; oversized capture data
+can be rejected before publication. The feature does not promise a recovery
+notice for every bulk action or partially successful batch.
+
+## Enable editing only
+
+```php
+RecoveryProfile::make(Post::class)
+    ->fields(['title'])
+    ->operations(['edit']);
+```
+
+Native `EditAction` recovery restores only declared columns. Saving on an
+`EditRecord` page is a separate application integration. Relationship tables,
+hard deletion, external files/emails/payments and custom operations are not
+automatically covered by the built-in action capture.
+
+## Tenant query and explicit inverse permission
+
+```php
+use App\Models\Post;
+use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
+
+RecoveryProfile::make(Post::class)
+    ->fields(['title'])
+    ->queryUsing(fn (Builder $query): Builder => $query->where(
+        'team_id', Filament::getTenant()->getKey(),
+    ))
+    ->authorizeUsing(function ($user, Model $record, string $operation): bool {
+        $ability = match ($operation) {
+            'edit' => 'update',
+            'delete' => 'restore',
+            'restore' => 'delete',
+        };
+
+        return Gate::forUser($user)->allows($ability, $record);
+    });
+```
+
+Adapt `team_id` to your tenancy model. This callback demonstrates the default
+inverse policy mapping; it does not broaden it. The query cannot silently switch
+to a different model/connection or remove the need for current permission checks.
+
+## Recovery result and failures
+
+The server checks the original context, deadline, current policy and expected
+post-operation state. Another user's edit, an expired entry, missing record,
+changed tenant/guard or lost permission prevents overwriting current data. A
+bulk inverse commits as a transaction or is rejected as a whole. Committed
+receipts prevent a retry from applying the same inverse twice.
+
+Successful recovery refreshes the owning native Livewire component, not every
+unrelated table on the page. Applications can observe `flex-records-recovered`
+for their own integration. It is not a promise of independently rendering only
+one row. Hovering a recovery notice does not extend the server deadline.
+
+```php
+// Disable only recovery; ordinary shortcuts and notifications remain.
+FlexThemePlugin::make()->recovery(false);
+```
+
+Disabling `shortcuts()` is different: it removes keyboard enhancement while the
+configured recovery notice can still provide its native Undo button.

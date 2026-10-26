@@ -1,0 +1,151 @@
+---
+title: "Appearance"
+description: "Accent, Base tint, presets, Google Fonts, corner scales and light/dark policies."
+icon: "swatch-book"
+---
+
+## Accent and Base
+
+| Key | Default | Accepted value |
+| --- | --- | --- |
+| `accent` | `#6c43bf` | Six-digit HEX; also the native `primary` palette. |
+| `base_tint` | `18` from the Default preset | Integer `0`–`30`. |
+| `theme_preset` | `default` | A preset key below, or `custom`. |
+
+**Accent** changes the primary color. **Base** changes the neutral canvas and
+control tint derived from it. Base `0` is neutral; increasing it introduces more
+of the accent into the neutral surfaces. Surface and text colors are derived;
+there are no independent saved canvas/text color controls.
+
+Presets change Accent and Base together. They do not replace branding, fonts,
+corner scales, navigation or the other semantic colors. Editing Accent or Base
+manually marks the combination as Custom when it no longer matches a preset.
+
+| Preset key | Accent | Base |
+| --- | --- | --- |
+| `default` | `#6c43bf` | `18` |
+| `tide` | `#087e8b` | `26` |
+| `orchid` | `#a23d9b` | `24` |
+| `grove` | `#327455` | `22` |
+| `ember` | `#bd4a2e` | `20` |
+| `slate` | `#526277` | `10` |
+| `citron` | `#7b721d` | `24` |
+| `baltic` | `#2865b3` | `20` |
+| `bloom` | `#b84064` | `22` |
+| `dune` | `#9b6d34` | `18` |
+| `lagoon` | `#16816c` | `26` |
+| `iris` | `#7353ba` | `22` |
+
+```php
+use Flex\Theme\FlexThemePlugin;
+
+FlexThemePlugin::make()->settingsOverrides([
+    'theme_preset' => 'tide',
+]);
+```
+
+A locked named preset locks its derived Accent/Base values too. For a custom
+palette, configure `accent` and `base_tint` explicitly.
+
+## Fonts
+
+`font` defaults to `Inter`. Suggested families are Inter, Figtree, Hanken Grotesk,
+Geist, DM Sans, Public Sans, Manrope, Plus Jakarta Sans and Outfit.
+
+Choose **Add Google Font** in the font picker and paste one family URL, such as:
+
+```text
+https://fonts.google.com/specimen/Fraunces
+https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&display=swap
+```
+
+The importer accepts HTTPS Google Fonts specimen links, supported Google CSS
+links and Google Fonts selection/embed links containing exactly one family. It
+verifies the stylesheet on the server and stores canonical family/URL metadata.
+It requests weights 400/500/600/700, with a family-only fallback when necessary.
+Arbitrary CSS URLs, multi-family imports and local font-file uploads are not
+supported by this picker.
+
+After adding a family, **save the settings page**. The library and chosen family
+are then shared by users of that panel and survive reloads. Fonts remain served
+through Google's stylesheet/provider; importing metadata does not self-host the
+font files. The library accepts at most 20 unique custom families, with valid
+family names up to 80 characters. Removing the selected custom-only family falls
+back to Inter in the draft.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'font' => 'Fraunces',
+    'custom_fonts' => [[
+        'family' => 'Fraunces',
+        'url' => 'https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&display=swap',
+    ]],
+]);
+```
+
+Use a family/URL pair accepted by the importer. Locking the font or custom
+library also disables operations that would change that locked dependency.
+
+## Radius and Radius Form
+
+`radius_scale` defaults to `medium`; `form_radius_scale` defaults to `large`.
+They are independent: rounded sections can contain less-rounded fields.
+
+| Scale | Overall radius | Field radius | Derived modal radius |
+| --- | --- | --- | --- |
+| `none` | `0` px | `0` px | `0` px |
+| `extra-small` | `4` px | `2` px | `6` px |
+| `small` | `8` px | `4` px | `12` px |
+| `medium` | `16` px | `8` px | `24` px |
+| `large` | `24` px | `12` px | `32` px |
+
+The derived keys `radius`, `button_radius`, `control_radius`, and `modal_radius`
+are recomputed from the scales. Configure the scales instead of trying to set
+those numbers independently. Circular avatars, swatches and close controls
+remain circular at Radius None.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'radius_scale' => 'small',
+    'form_radius_scale' => 'none',
+]);
+```
+
+## Available modes
+
+| Key | Default | Accepted values |
+| --- | --- | --- |
+| `color_mode` | `both` | `light`, `both`, `dark`, or PHP `inherit`. |
+| `theme_switcher` | `null` | `true`, `false`, or `null` to inherit Filament. |
+| `default_theme_mode` | `inherit` | `light`, `dark`, `system`, `inherit`. |
+
+The **Available modes** select offers Light only, Light & dark, and Dark only.
+Switcher visibility and default-mode controls appear only for Light & dark.
+Light only disables dark mode; Dark only forces it. The default mode is the
+native Filament default, not a command to overwrite every visitor's remembered
+theme. Native Filament retains browser theme state.
+
+```php
+// Restrict this panel to light mode.
+FlexThemePlugin::make()->settingsOverrides(['color_mode' => 'light']);
+
+// Offer both modes; start with the system preference and show the switcher.
+FlexThemePlugin::make()->settingsOverrides([
+    'color_mode' => 'both',
+    'theme_switcher' => true,
+    'default_theme_mode' => 'system',
+]);
+
+// Delegate mode policy to native Panel::darkMode()/themeSwitcher().
+FlexThemePlugin::make()->settingsOverrides([
+    'color_mode' => 'inherit',
+    'theme_switcher' => null,
+    'default_theme_mode' => 'inherit',
+]);
+```
+
+For example, the last configuration respects native `->darkMode(false)`,
+`->darkMode(isForced: true)`, `->themeSwitcher(false)` and
+`->defaultThemeMode(ThemeMode::Light)` in your panel provider. An explicit theme
+mode preference is an override, so use `inherit` when PHP's native policy should
+remain authoritative.

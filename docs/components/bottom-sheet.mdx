@@ -1,0 +1,260 @@
+---
+title: "Bottom sheets and floating drawers"
+description: "Native Filament Actions with floating side panels, adaptive bottom sheets and configurable expansion heights."
+icon: "panel-bottom"
+---
+
+FLEX extends a native Filament `Action`. The action keeps its form, validation,
+authorization, submit callback, focus trap, nested actions and close lifecycle.
+The theme adds presentation and gestures; it does not introduce a second dialog
+or require a separate JavaScript open/close controller.
+
+## A first bottom sheet
+
+```php
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
+use Filament\Support\Enums\Width;
+use Flex\Theme\Actions\Drawer;
+use Flex\Theme\Enums\DrawerPosition;
+
+Drawer::position(
+    Action::make('workspacePreferences')
+        ->label('Workspace preferences')
+        ->modalHeading('Workspace preferences')
+        ->modalDescription('Choose how your team can reach you.')
+        ->modalWidth(Width::ExtraLarge)
+        ->schema([
+            TextInput::make('display_name')->required()->maxLength(120),
+            Toggle::make('updates')->label('Send me product updates'),
+        ])
+        ->fillForm(['display_name' => 'Alex Morgan', 'updates' => true])
+        ->modalSubmitActionLabel('Save preferences')
+        ->action(function (array $data): void {
+            // Demo feedback only. Authorize and persist in your application.
+            Notification::make()->title('Preferences preview saved')->success()->send();
+        }),
+    DrawerPosition::Bottom,
+);
+```
+
+Place the returned Action in the same native page/header/table/schema action
+location you already use. A custom Livewire host needs Filament's normal action
+and schema integration; installing this presentation helper does not replace it.
+
+## Complete FLEX API
+
+```php
+Drawer::position(
+    action: $action,
+    position: DrawerPosition::Bottom,
+    detents: [0.45, 0.92],
+    initialDetent: 0,
+);
+```
+
+| Parameter | Default | Behavior |
+| --- | --- | --- |
+| `action` | Required | Existing `Filament\Actions\Action`; the same action is configured and returned. |
+| `position` | Required | `DrawerPosition::Start`, `End`, or `Bottom`. There is no Top value. |
+| `detents` | `[0.45, 0.92]` | Bottom-only ascending fractions of dynamic viewport height. |
+| `initialDetent` | `0` | Zero-based index in that list; bottom-only. |
+
+Bottom detents must be a PHP list of **1–8 unique ascending finite numbers**,
+each greater than zero and at most one. The initial index must exist. Empty,
+duplicate, descending, nonnumeric, infinite or out-of-range values throw an
+`InvalidArgumentException`. Use fractions, not pixel values or percentages such
+as `45`. Existing extra modal-window attributes are merged.
+
+## Three heights, opened at the middle
+
+```php
+Drawer::position(
+    Action::make('threeHeights')
+        ->modalHeading('Project details')
+        ->modalWidth(Width::ExtraLarge)
+        ->schema(array_map(
+            fn (int $index) => TextInput::make('detail_'.$index)
+                ->label('Project detail '.$index),
+            range(1, 14),
+        )),
+    DrawerPosition::Bottom,
+    detents: [0.35, 0.60, 0.92],
+    initialDetent: 1,
+);
+```
+
+The selected detent is a maximum visible height, capped by natural content.
+A short sheet stays compact instead of expanding into empty space. Long content
+scrolls when the tallest effective height cannot contain it. Desktop and mobile
+use the available dynamic viewport; viewport/keyboard changes refit the sheet.
+
+## One height and short content
+
+```php
+use Filament\Schemas\Components\Text;
+
+Drawer::position(
+    Action::make('ready')
+        ->modalHeading('Ready to collaborate')
+        ->schema([Text::make('Invite your team when you are ready.')])
+        ->modalSubmitAction(false)
+        ->modalCancelActionLabel('Done'),
+    DrawerPosition::Bottom,
+    detents: [0.65],
+);
+```
+
+One detent removes intermediate expansion choices. It still caps height to
+content and viewport; it does not force short content to fill 65% of the screen.
+
+## Adaptive content
+
+```php
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+
+Drawer::position(
+    Action::make('adaptive')
+        ->modalHeading('Project preferences')
+        ->schema([
+            Toggle::make('show_details')->live(),
+            Section::make('Additional details')
+                ->visible(fn (Get $get): bool => (bool) $get('show_details'))
+                ->schema(array_map(
+                    fn (int $index) => TextInput::make('detail_'.$index),
+                    range(1, 12),
+                )),
+        ]),
+    DrawerPosition::Bottom,
+);
+```
+
+Native Livewire visibility changes are measured without cloning fields. When
+content shrinks, height follows the new natural bound. During active dragging,
+content measurements are deferred until the gesture can settle safely.
+
+## Desktop scrolling and pointer gestures
+
+- Scroll upward over eligible sheet content to expand before scrolling long
+  content. Once expanded, content keeps its native scroll behavior.
+- Drag the grabber/header to move between detents. Release uses movement and
+  velocity; upward overscroll has resistance.
+- Downward content scrolling does not unexpectedly collapse the sheet. A downward
+  dismissal drag uses the native Close button when it is available.
+- Interactive controls and nested scrollable inputs retain their native behavior.
+
+No drag-only explanation is needed on desktop: wheel expansion is supported.
+Touch content gestures distinguish vertical dragging from horizontal/interactive
+gestures. These are supported interactions, not a guarantee of identical timing
+on every browser or physical device.
+
+## Keyboard controls
+
+| Target | Key | Result |
+| --- | --- | --- |
+| Grabber button | Enter / Space or click | Toggle between available heights. |
+| Grabber button | Arrow Up / Down | Step through heights. |
+| Grabber button | Home / End | Tallest / smallest effective height. |
+| Eligible sheet content | Page Down / Arrow Down / Space | Expand before ordinary content scrolling. |
+| Form controls | Their native keys | Keep text/select/editor interaction. |
+| Native modal | Escape | Native configured close behavior. |
+
+Tab/focus expansion helps reveal lower form controls. Reduced motion removes
+decorative settling interpolation. The sheet does not take over field shortcuts
+or native focus trapping.
+
+## Native modal options still apply
+
+These are **Filament Action methods**, not additional `Drawer::position()` arguments:
+
+| Native API | Use |
+| --- | --- |
+| `modalHeading()`, `modalDescription()` | Accessible task title and description. |
+| `modalWidth(Width::...)` | Native width; Screen intentionally keeps fullscreen presentation. |
+| `schema()`, `fillForm()`, `action()` | Native form, initial data, validation and submission. |
+| `authorize()`, `visible()`, `disabled()` | Normal action permission and presentation rules. |
+| `stickyModalHeader()`, `stickyModalFooter()` | Sticky or scrolling native header/footer. |
+| `modalSubmitActionLabel()`, `modalCancelActionLabel()` | Footer labels. |
+| `modalSubmitAction(false)`, `modalCancelAction(false)` | Omit individual native footer controls. |
+| `extraModalFooterActions()` | Additional native actions, including child dialogs. |
+| `modalCloseButton(false)` | Remove the close button; this also affects drag-dismiss eligibility. |
+| `closeModalByClickingAway(false)` | Disable backdrop close. |
+| `closeModalByEscaping(false)` | Disable native Escape close. |
+| `modalAutofocus(false)` | Change native initial autofocus. |
+| `extraModalWindowAttributes([...], merge: true)` | Add attributes without removing the sheet marker. |
+
+For a scrolling header/footer:
+
+```php
+Drawer::position(
+    Action::make('scrollingForm')
+        ->schema([TextInput::make('name')->required()])
+        ->stickyModalHeader(false)
+        ->stickyModalFooter(false),
+    DrawerPosition::Bottom,
+);
+```
+
+Omitting Cancel does not automatically forbid Escape, backdrop or Close.
+Configure each native close affordance deliberately. Native validation failure
+keeps the same sheet open; nested actions return to their parent through
+Filament's modal stack.
+
+## Floating side panels
+
+```php
+Drawer::position(
+    Action::make('endPanel')->schema([TextInput::make('name')]),
+    DrawerPosition::End,
+);
+
+Drawer::position(
+    Action::make('startPanel')->schema([TextInput::make('name')]),
+    DrawerPosition::Start,
+);
+```
+
+Start/End delegate to Filament's native slide-over positions; their physical side
+follows document direction. The ordinary `Action::make(...)->slideOver()` is also
+themed. Non-fullscreen panels float with an outside gutter and theme corner
+radius; smaller screens use a compact gutter. Radius None removes the rounded
+shape. Detents do not apply to side panels.
+
+## Detent events
+
+The window emits a bubbling `ft-sheet-detent-change` with
+`{ index, fraction, height }`: index is zero-based, fraction is the configured
+viewport fraction and height is the effective content-capped height in pixels.
+
+```js
+document.addEventListener('ft-sheet-detent-change', event => {
+  const { index, fraction, height } = event.detail;
+  // Observe expansion in your application's UI.
+});
+
+const sheet = document.querySelector(
+  '.fi-modal-open .fi-modal-window[data-ft-drawer-position="bottom"]',
+);
+sheet?.dispatchEvent(new CustomEvent('ft-sheet-set-detent', {
+  detail: { index: 1 },
+}));
+```
+
+Dispatch the setter on the intended open **window element**, after enhancement
+has initialized; it is not a global window command. Invalid indices are ignored.
+Use native Action mounting for opening/closing. A detent event is presentation
+state, not saved form data.
+
+## FLEX Fields and fallback behavior
+
+The native examples above need only Filament and FLEX Theme. Optional installed
+FLEX Fields can be used in the action's schema; their own asset readiness and
+retry UI remain authoritative. The sheet does not replace them with a timeout.
+
+The enhancement loads on activation and cleans up after close/removal. A failed
+module import leaves the native form and close controls usable. Rebuild/publish
+the theme runtime when updating the package. Do not manually copy its runtime or
+edit Filament's modal templates to obtain bottom-sheet behavior.

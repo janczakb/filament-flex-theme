@@ -1,0 +1,70 @@
+---
+title: "Brand"
+description: "Workspace identity, full and compact logo variants, favicon generation and saved asset ownership."
+icon: "compass"
+---
+
+Brand is shared by the current panel's users. It is independent of appearance
+presets and is excluded from preference reset and JSON transfer.
+
+| Key | Purpose |
+| --- | --- |
+| `brand` | Workspace name; required, up to 60 characters; default `Flex Studio`. |
+| `logo_path` | Full logo for the light/default panel. |
+| `dark_logo_path` | Optional full logo for dark mode. |
+| `compact_logo_path` | Square mark for the collapsed sidebar. |
+| `dark_compact_logo_path` | Optional dark-mode square mark. |
+| `favicon_path` | Saved handle for the generated browser/mobile icon family. |
+
+## Full and compact logos
+
+Upload SVG, PNG, JPEG or WebP, up to 2 MB. A full logo preserves its aspect
+ratio. Compact marks use the square crop workflow and are processed separately;
+the full wordmark is not squeezed into the collapsed-sidebar slot. Choose light
+and dark variants with sufficient contrast for their surfaces.
+
+Without an uploaded full logo, native PHP branding remains available; when no
+full logo exists, the theme supplies its default wordmark. Uploaded compact
+branding takes precedence over `collapsedBrandLogo()`. The dark compact mark
+falls back to the normal compact mark when omitted.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Illuminate\Support\HtmlString;
+
+FlexThemePlugin::make()->collapsedBrandLogo(
+    new HtmlString(view('branding.compact-mark')->render()),
+);
+```
+
+The Blade view should render trusted application artwork, not user-supplied HTML.
+Use native `Panel::brandLogo()` and `darkModeBrandLogo()` for application-owned
+full artwork, and omit uploaded replacements when those should stay in control.
+
+## Favicon
+
+The favicon uploader accepts PNG, JPEG and WebP up to 2 MB, with source dimensions
+of at least **500 × 500** and at most **4096 × 4096** pixels. It generates PNG
+sizes 16, 32, 64, 180, 192 and 512 pixels and associated browser/mobile metadata.
+SVG is supported for logos, not for this favicon workflow.
+
+```php
+// Keep icon links but omit the generated web-app manifest link.
+FlexThemePlugin::make()->faviconManifest(false);
+```
+
+## Save and persistence
+
+Configure Laravel's `public` disk and `php artisan storage:link` as appropriate
+for your deployment. Save after uploading or replacing branding. Paths are
+validated against the current panel and asset kind; another panel's storage path
+cannot be reused as an uploaded asset handle.
+
+Do not invent `logo_path` or `favicon_path` values using arbitrary public URLs.
+The keys represent package-generated, panel-owned paths. Preference export
+deliberately omits these files and the workspace name. To reproduce a brand in
+another panel, upload that panel's own assets or use native PHP branding.
+
+Removing/replacing saved branding cleans up superseded owned assets after a
+successful commit. Existing pending form uploads and branding are preserved by
+preference import/reset. Keep storage persistent across deployments.

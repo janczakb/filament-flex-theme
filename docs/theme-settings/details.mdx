@@ -1,0 +1,43 @@
+---
+title: "Details and motion"
+description: "Text size, label case, motion and five light/dark transition choices."
+icon: "settings-2"
+---
+
+| Setting | Default | Accepted values |
+| --- | --- | --- |
+| `font_size` | `14` | `12`, `13`, `14`, `15`, `16` px. |
+| `motion` | `true` | Boolean. |
+| `uppercase_labels` | `false` | Boolean. |
+| `theme_transition` | `reveal` | `none`, `reveal`, `eclipse`, `split`, `rise`. |
+
+Body size feeds the shared interface typography; intentional heading and compact
+metadata sizes keep their hierarchy. Uppercase labels controls normal form-label
+presentation rather than rewriting stored field names or application text.
+
+Theme transition changes the visual switch between native light and dark mode.
+It does not enable a mode that the panel forbids. With `motion: false`, the
+runtime resolves decorative theme switching to `none`; supported animations also
+respect the visitor's reduced-motion preference.
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Keyboard\ShortcutConfiguration;
+
+FlexThemePlugin::make()->settingsOverrides([
+    'font_size' => 15,
+    'motion' => true,
+    'uppercase_labels' => false,
+    'theme_transition' => 'split',
+]);
+
+// A dedicated transition choice also locks its editor control.
+FlexThemePlugin::make()->shortcuts(
+    ShortcutConfiguration::make()->themeTransition('eclipse'),
+);
+```
+
+Do not pass arbitrary body sizes or animation names. Use `spacing` and
+`row_height` in [Layout](/docs/theme-settings/layout#sticky-topbar-and-density)
+for density, and the independent corner scales in
+[Appearance](/docs/theme-settings/appearance#radius-and-radius-form) for shape.

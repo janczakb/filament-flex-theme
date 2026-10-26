@@ -1,0 +1,109 @@
+---
+title: "Announcements"
+description: "Publish rotating global or inline messages with native links, actions, schedules and countdowns."
+icon: "megaphone"
+---
+
+Announcements are code-configured message bars. A bar can display one static
+message, rotate through a campaign, show a scheduled countdown, or consume an
+authorized live provider. They are separate from native toast/database
+notifications and from Theme Settings; there is no announcement content editor
+or announcement database model installed by this feature.
+
+## First global announcement
+
+Register a bar in the current panel's plugin configuration:
+
+```php
+use Flex\Theme\Announcements\Announcement;
+use Flex\Theme\Announcements\AnnouncementBar;
+use Flex\Theme\FlexThemePlugin;
+
+FlexThemePlugin::make()->announcementBars([
+    AnnouncementBar::make('workspace-news')
+        ->global()
+        ->sticky(false)
+        ->label('Workspace news')
+        ->messages([
+            Announcement::make('new-workspace', 'A fresh workspace for your next idea.')
+                ->icon('hugeicons-sparkles')
+                ->tone('primary')
+                ->action('What is new', '/whats-new'),
+        ]),
+]);
+```
+
+`global()` places the bar above the authenticated panel. Global bars span the
+viewport; `sticky(false)` lets this one scroll away. By default a global bar is
+sticky. The theme adjusts the panel's native chrome offsets when bars appear,
+change height or are dismissed.
+
+## Inline placement
+
+Register a non-global bar, then render its Livewire component in a panel Blade
+view. Registration defines the trusted configuration; rendering creates an owner.
+
+```php
+AnnouncementBar::make('project-news')->messages([
+    Announcement::make('review', 'The next project review is ready.')
+        ->tone('info'),
+]);
+```
+
+```blade
+@livewire(\Flex\Theme\Livewire\Announcements::class, [
+    'barId' => 'project-news',
+], key('project-news-inline'))
+```
+
+Use a distinct Livewire key for each placement. Or let a native render hook
+place it for you:
+
+```php
+use Filament\View\PanelsRenderHook;
+
+AnnouncementBar::make('content-news')
+    ->renderHook(PanelsRenderHook::CONTENT_BEFORE)
+    ->messages([
+        Announcement::make('welcome', 'Everything you need, in one place.'),
+    ]);
+```
+
+Choose global, a render hook, or manual rendering for a placement; do not
+accidentally render the same bar twice. Inline bars use the theme's overall
+corner style. A bar registered without any placement is not visible by itself.
+
+## Rotation and controls
+
+```php
+AnnouncementBar::make('releases')
+    ->global()
+    ->controls()
+    ->interval(5000)
+    ->transition(350)
+    ->messages([
+        Announcement::make('release', 'New tools for a more focused workspace.')
+            ->tone('primary'),
+        Announcement::make('collaborate', 'Bring your whole team together.')
+            ->tone('success')
+            ->duration(8000),
+        Announcement::make('help', 'Need a hand? The guide is ready.')
+            ->tone('neutral')
+            ->action('Read the guide', '/guide'),
+    ]);
+```
+
+Intervals and transition durations are milliseconds. Rotation pauses for hover,
+focus, an offscreen bar, a hidden browser tab, manual pause, or reduced motion.
+These choices do not pause a real countdown deadline. Playback controls appear
+only when enabled and more than one eligible message exists. A progress ring
+shows the current slide duration.
+
+Text and labels are escaped plain text, not HTML. Use ordinary links and trusted
+PHP callbacks for actions. Stable IDs are required; keep the same ID for the same
+message and use revisions to reintroduce content intentionally.
+
+See [Configuration](/docs/announcements/configuration),
+[Live updates and events](/docs/announcements/live-updates),
+[Examples](/docs/announcements/recipes), and the
+[complete API](/docs/announcements/reference).

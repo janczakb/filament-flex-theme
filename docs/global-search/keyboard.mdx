@@ -1,0 +1,91 @@
+---
+title: "Keyboard shortcuts"
+description: "Configure global shortcuts, in-search navigation and the recorder in Theme Settings."
+icon: "keyboard"
+---
+
+## Defaults
+
+| Action | Default | Scope |
+| --- | --- | --- |
+| `search` | Inherit Filament global-search bindings | Global, while FLEX search is available. |
+| `sidebar` | `mod+.` | Global, only for a collapsible desktop sidebar. |
+| `theme` | `mod+shift+l` | Global, only when the panel permits changing color scheme. |
+| `next` | `arrowdown` | Search results/categories. |
+| `previous` | `arrowup` | Search results/categories; returns from the first result to the input. |
+| `activate` | `enter` | Activate the selected result. |
+| `back` | `backspace` | Return from a source when the query input is empty. |
+
+`mod` means Command on macOS and Control on Windows/Linux. Escape and Tab keep their native close/focus behavior and cannot be reassigned through the recorder.
+
+## Set bindings in PHP
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Keyboard\ShortcutConfiguration;
+
+FlexThemePlugin::make()->shortcuts(
+    ShortcutConfiguration::make()
+        ->search('mod+j')
+        ->sidebar('mod+.')
+        ->theme('mod+shift+l')
+        ->bindings('next', 'arrowdown')
+        ->bindings('previous', 'arrowup')
+        ->bindings('activate', 'enter')
+        ->bindings('back', 'backspace')
+);
+```
+
+Each PHP override locks that action in the Theme Settings recorder. Omitted actions remain editable. Binding conflicts are validated for both macOS and Windows/Linux interpretations.
+
+## Multiple bindings or no binding
+
+```php
+ShortcutConfiguration::make()
+    ->search(['mod+k', 'alt+k'])
+    ->sidebar(null);
+```
+
+Each action accepts up to four bindings. Use `null` or `[]` to disable its binding. Global search/sidebar/theme shortcuts require Control, Command, Alt or a function key; a bare letter is not accepted as a global shortcut.
+
+Supported key names include letters, digits, punctuation, `f1`–`f24`, arrows, Enter, Space, Backspace, Delete, Home, End, PageUp and PageDown. Aliases such as `cmd`, `command`, `control`, `option`, `return` and `period` normalize to canonical names. Browser or operating-system shortcuts may still be intercepted outside the application; choose bindings that fit your audience.
+
+## Use native Filament search bindings
+
+```php
+$panel->globalSearchKeyBindings(['mod+k', 'ctrl+k']);
+```
+
+With `shortcut_search` set to `inherit` and no PHP `search()` override, FLEX reads the panel's native bindings. Changes to the effective shortcut are reflected in the search footer.
+
+## Recorder and footer
+
+```php
+ShortcutConfiguration::make()
+    ->settings(false)
+    ->footer(false);
+```
+
+`settings(false)` hides the recorder without disabling configured runtime shortcuts. `footer(false)` hides the desktop search footer; mobile does not display that footer. `enabled(false)` disables the FLEX shortcut manager, and `FlexThemePlugin::make()->shortcuts(false)` is the equivalent plugin shorthand.
+
+In Theme Settings, select a shortcut input and press the desired combination. The recorder supports platform previews, clearing, restoring a default and PHP-locked controls. Sidebar configuration is unavailable when the current layout has no supported collapsible sidebar. Theme switching is unavailable when the color scheme is forced.
+
+## Theme transitions
+
+```php
+ShortcutConfiguration::make()->themeTransition('reveal');
+```
+
+Accepted styles: `none`, `reveal`, `eclipse`, `split`, `rise`. A PHP choice locks that setting. Effects respect the theme's motion setting and browser support; a color-scheme change still works when animation is unavailable.
+
+## Open and close from application code
+
+```js
+window.dispatchEvent(new CustomEvent('flex-search-open', {
+    detail: { query: 'Olivia', source: 'customers' },
+}));
+
+window.dispatchEvent(new CustomEvent('flex-search-close'));
+```
+
+`source` must be a registered, accessible source ID. The legacy `open-flex-search` event opens the window without source/query parameters. These events open UI; they do not bypass search or record authorization.

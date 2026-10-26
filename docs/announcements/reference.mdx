@@ -1,0 +1,68 @@
+---
+title: "Announcement API"
+description: "Every bar and message builder option, accepted range and default."
+icon: "list"
+---
+
+## AnnouncementBar
+
+Import `Flex\Theme\Announcements\AnnouncementBar`. Create with `make(string $id)`.
+IDs are 1–100 ASCII letters, digits, underscores or hyphens. Registered bar IDs
+must be unique within the panel.
+
+| Builder | Default | Values / effect |
+| --- | --- | --- |
+| `messages(iterable\|Closure)` | Empty | Up to 50 unique Announcement instances; clears a previous provider. |
+| `provider(string $class)` | None | Container-resolved class implementing `AnnouncementProvider`. |
+| `label(string)` | `Announcements` | Accessible region name. |
+| `revision(string)` | `1` | Cache/dismissal version. |
+| `controls(bool = true)` | `false` | Previous, pause/play and next controls when more than one message is eligible. |
+| `autoPlay(bool = true)` | `true` | Initial automatic playback preference. |
+| `interval(?int)` | `6000` ms | 1000–600000 ms; null disables autoplay. A later numeric interval alone does not re-enable it. |
+| `transition(int)` | `350` ms | 0–1500 ms; reduced motion/theme motion can suppress movement. |
+| `initialIndex(int)` | `0` | Negative inputs become zero; resolved selection is bounded to active messages. |
+| `initiallyOpen(bool = true)` | `true` | Initial open preference, subject to remembered dismissal. |
+| `dismissible(bool = true)` | `true` | Bar-level permission to show Close. |
+| `dismissal(string $mode = 'bar', string $persistence = 'local')` | `bar`, `local` | Modes bar/message; persistence none/session/local. |
+| `pauseOnHover(bool = true)` | `true` | Suspend rotation while hovered. |
+| `pauseOnFocus(bool = true)` | `true` | Suspend while focus is inside. |
+| `pauseOffscreen(bool = true)` | `true` | Suspend outside the viewport. |
+| `poll(?int $seconds = 30)` | Disabled until called | 10–3600 seconds; null disables. |
+| `listen(array\|Closure)` | Empty | Livewire/Echo events that refresh the source. |
+| `cache(?int $seconds = 60, string\|Closure $key = 'default')` | Disabled until called | TTL 1–86400 seconds; null disables; optional scoped namespace. |
+| `onDismiss(?Closure)` | None | Optional server callback after user dismissal. |
+| `onCountdownEnd(?Closure)` | None | Optional server callback for an elapsed browser countdown. |
+| `renderHook(?string $hook = PanelsRenderHook::CONTENT_BEFORE)` | None until called | Register a non-global native render-hook placement; null disables it. |
+| `global(bool = true)` | `false` | Render above the authenticated panel. |
+| `sticky(bool = true)` | `true` | Sticky global placement; false scrolls away. |
+
+Calling `announcementBars([...])` replaces that plugin instance's registration
+list. `getAnnouncementBar($id)` resolves a registered bar and rejects unknown IDs.
+`getGlobalAnnouncementBars()` returns the registered global bars.
+
+## Announcement
+
+Import `Flex\Theme\Announcements\Announcement`. Create with
+`make(string $id, string $message)`. Message IDs follow the same format and are
+unique within their bar. Text must be nonblank and at most 2000 characters.
+
+| Builder | Default | Values / effect |
+| --- | --- | --- |
+| `revision(string)` | `1` | Per-message dismissal version. |
+| `icon(?string)` | None | Registered SVG icon alias; null removes. |
+| `visible(bool\|Closure)` | `true` | Server-evaluated presentation condition. |
+| `priority(int)` | `0` | Higher priorities sort first. |
+| `dismissible(bool = true)` | `true` | Both this and the bar must allow Close. |
+| `duration(int $milliseconds)` | Inherit bar interval | 1000–600000 ms for this message. |
+| `tone(string)` | `neutral` | neutral/inverted/primary/info/success/warning/danger. |
+| `colors(string $background, ?string $foreground = null)` | Theme/tone | Six-digit HEX light pair; foreground can be inferred. |
+| `darkColors(string $background, ?string $foreground = null)` | Theme/tone | Independent dark pair. |
+| `action(string $label, string\|Closure\|null $url = null, ?Closure $handler = null, bool $newTab = false)` | None | Exactly one URL or handler; label 1–120 characters. |
+| `countdown(DateTimeInterface $to, string $label = 'Time remaining')` | None | Absolute deadline and timer's accessible description. |
+| `schedule(?DateTimeInterface $from = null, ?DateTimeInterface $until = null)` | Unbounded | Start-inclusive/end-exclusive visibility window. |
+
+Use [configuration](/docs/announcements/configuration) for callback safety,
+color behavior and dismissal semantics, and
+[events](/docs/announcements/live-updates#browser-commands) for the complete
+command/event interface. Browser presentation events are not server authorization
+or a durable delivery/acknowledgment guarantee.

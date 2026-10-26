@@ -1,0 +1,247 @@
+---
+title: Keyboard controls
+description: Configure workspace commands, contextual table controls and searchable shortcut help.
+---
+
+FLEX Theme provides one keyboard configuration for the panel, Theme Settings and
+shortcut help. Controls respect text inputs, native modals, composition input and
+browser focus. Native action bindings take priority over additional commands.
+
+For the complete table interaction, including the difference between highlight,
+single-row selection and page selection, see
+[Table shortcuts and selection](/docs/workspace/table-shortcuts). Recovery is
+configured separately in [Recover recent changes](/docs/workspace/recovery).
+
+## Configure controls
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Keyboard\Command;
+use Flex\Theme\Keyboard\ShortcutConfiguration;
+
+FlexThemePlugin::make()->shortcuts(
+    ShortcutConfiguration::make()
+        ->help('mod+shift+/')
+        ->undo('mod+z')
+        ->tableNavigation()
+        ->navigationSequences(true, [PostResource::class => 'p'])
+        ->bindings('row_next', 'j')
+        ->bindings('row_previous', 'k')
+        ->commands(
+            Command::make('reports')
+                ->label('Open reports')
+                ->group('Workspace')
+                ->keys('mod+shift+e')
+                ->visible(fn (): bool => Reports::canAccess())
+                ->url(fn (): string => Reports::getUrl()),
+        ),
+);
+```
+
+`mod` means Command on macOS and Control on other platforms. Set a binding to
+`null` to disable it. PHP bindings are authoritative: their controls are locked in
+Theme Settings. Unlocked preferences can be recorded, cleared or reset there.
+
+| Context | Action | Default |
+| --- | --- | --- |
+| Workspace | Open search | Native panel binding |
+| Workspace | Keyboard help | Mod + Shift + / |
+| Workspace | Undo latest eligible change | Mod + Z |
+| Workspace | Start navigation sequence | G |
+| Table | Next / previous record | J / K |
+| Table | Open record | O |
+| Table | Toggle record selection | A |
+| Table | Select all records on the current page | Mod + A |
+| Table | Previous / next page | [ / ] |
+| Table | Open filters | F |
+
+Table bindings are `row_next`, `row_previous`, `row_open`, `row_select`,
+`page_select`, `page_previous`, `page_next` and `filters`. They use the current
+native table and its rendered page of records. They do not fetch a separate copy
+of all database records. Inputs and native popups keep their own keyboard behavior.
+Select page uses Command + A on macOS and Control + A on Windows/Linux.
+Pressing it again keeps the page selected. In text fields, the same keys retain
+native text selection. Use the table's native deselection control to clear records.
+Each shortcut must be unique across the configured actions, including actions in
+different contexts. Equivalent Control/Command bindings are checked for both
+platforms. Conflicts are rejected in the recorder and when saving configuration.
+While recording, Backspace and Delete assign those keys; use the remove button
+to clear a binding. Escape cancels recording and Tab moves to the next control.
+
+## Contextual help
+
+```js
+// A help action next to a table.
+window.dispatchEvent(new CustomEvent('flex-keyboard-help', {
+    detail: { context: 'table' },
+}))
+
+// Full workspace help, including navigation sequences and custom commands.
+window.dispatchEvent(new CustomEvent('flex-keyboard-help', {
+    detail: { context: 'global' },
+}))
+```
+
+Table help contains table controls, applicable native actions and recovery. It
+omits page navigation sequences. Full workspace help includes the permitted
+navigation entries and custom commands. Both use the same keycaps and vector icons
+as Keyboard settings; Escape and focus restoration belong to the native modal.
+
+Navigation sequences are consecutive keys: press the configured prefix, then the
+letters assigned to a destination. They are not simultaneous key combinations.
+Typing, opening a modal, leaving the page or losing window focus cancels a pending
+sequence. Entries come from the current panel's authorized native navigation.
+
+## Declare navigation on a Resource or Page
+
+A destination can declare its own sequence. No extra registration, base class
+or trait is needed:
+
+```php
+class CustomerResource extends Resource
+{
+    protected static ?string $navigationShortcut = 'c';
+}
+
+class Reports extends Page
+{
+    public static function getNavigationShortcut(): ?string
+    {
+        return 'rp';
+    }
+}
+```
+
+With the default prefix, these open with **G → C** and **G → R → P**.
+The property name `$keyboardShortcut` and public static method
+`getKeyboardShortcut()` are also supported. These describe consecutive navigation
+keys, not a global single-key command. To assign a simultaneous combination, use
+a custom command or a native Action binding below.
+
+Panel `navigationSequences()` overrides take precedence over class declarations.
+Within a class, `getNavigationShortcut()` takes precedence over
+`$navigationShortcut`, then `getKeyboardShortcut()`, then `$keyboardShortcut`.
+Inherited declarations work. Use `null` for automatic assignment or `false` to
+exclude a destination from keyboard navigation. Methods must be public/static;
+properties must be static. Sequences contain one to three letters or digits,
+case-insensitively. Duplicate explicit sequences produce an exception naming both
+destinations; automatically assigned entries avoid occupied sequences.
+
+Declarations are resolved on the server only for entries already present in the
+current authorized navigation. Hidden destinations are not added by declaring a
+shortcut. Help, navigation hints and SPA navigation use the same resolved catalog.
+When one sequence is a prefix of another, the short destination waits for the
+sequence timeout so the longer sequence remains reachable.
+
+## Native Action bindings
+
+Keep native Filament actions and their authorization/confirmation behavior:
+
+```php
+Action::make('export')
+    ->label('Export customers')
+    ->keyBindings(['mod+shift+e'])
+    ->action(fn () => $this->export());
+```
+
+FLEX detects rendered native action bindings for shortcut help and lets Filament
+execute them. Native bindings take priority over workspace commands. FLEX validates
+its own configured commands and built-in bindings; it does not replace Filament's
+own arbitration between multiple native actions using the same key.
+
+## Custom commands
+
+A command can open an HTTP/application URL or dispatch a Livewire event:
+
+```php
+Command::make('open-export')
+    ->label('Prepare an export')
+    ->keys('mod+shift+e')
+    ->visible(fn (): bool => auth()->user()->can('export-reports'))
+    ->dispatch('prepare-report-export', ['format' => 'csv']);
+```
+
+The receiving server action must authorize the operation again. Visibility controls
+presentation; it does not grant permission to mutate data. Executable JavaScript
+strings are not needed to register a command.
+
+## Independent switches
+
+- `tableNavigation(false)` disables table enhancements.
+- `navigationSequences(false)` disables sequence navigation.
+- `settings(false)` hides the Keyboard settings tab.
+- `FlexThemePlugin::shortcuts(false)` disables the keyboard enhancement.
+- `search(false)` restores native search without disabling independent keyboard
+  controls or recovery.
+
+## All built-in bindings
+
+These are the package defaults, before saved preferences and PHP overrides.
+The editor stores one primary binding per action; `bindings()` can enforce up
+to four alternatives in PHP.
+
+| Action key | Saved setting | Default | Context / availability |
+| --- | --- | --- | --- |
+| `search` | `shortcut_search` | `inherit` | Native panel search key bindings; requires permitted enhanced search. |
+| `sidebar` | `shortcut_sidebar` | `mod+.` | A native collapsible desktop sidebar. |
+| `theme` | `shortcut_theme` | `mod+shift+l` | Native dark mode available and not forced. |
+| `next` | `shortcut_next` | `arrowdown` | Enhanced search result navigation. |
+| `previous` | `shortcut_previous` | `arrowup` | Enhanced search result navigation. |
+| `activate` | `shortcut_activate` | `enter` | Enhanced search selection. |
+| `back` | `shortcut_back` | `backspace` | Search context navigation. |
+| `help` | `shortcut_help` | `mod+shift+/` | Contextual keyboard help. |
+| `undo` | `shortcut_undo` | `mod+z` | Enabled recovery with an eligible pending entry. |
+| `navigation` | `shortcut_navigation` | `g` | Prefix for consecutive native navigation sequences. |
+| `row_next` | `shortcut_row_next` | `j` | Active native table. |
+| `row_previous` | `shortcut_row_previous` | `k` | Active native table. |
+| `row_open` | `shortcut_row_open` | `o` | Highlighted record with a native link/action. |
+| `row_select` | `shortcut_row_select` | `a` | Highlighted record with a selectable checkbox. |
+| `page_select` | `shortcut_page_select` | `mod+a` | Current native page-selection checkbox. |
+| `page_previous` | `shortcut_page_previous` | `[` | Native previous pagination control. |
+| `page_next` | `shortcut_page_next` | `]` | Native next pagination control. |
+| `filters` | `shortcut_filters` | `f` | Native table filter trigger. |
+
+Global search, sidebar, theme and undo combinations require a modifier or
+function key. Context-local table/navigation keys can be plain keys. Bindings
+accept letters, digits, the supported punctuation keys, F1–F24, arrows,
+Enter/Space/Backspace/Delete/Home/End/PageUp/PageDown and modifiers
+`mod`, `ctrl`, `meta`, `alt`, `shift`. Escape and Tab remain reserved for native
+interaction. Input strings are normalized; aliases such as `cmd`, `command`,
+`control`, `return`, `esc` and `period` map to their canonical names.
+
+## Record, clear and reset in the editor
+
+Click a recorder in Theme Settings → Keyboard, then press the desired combination.
+The platform preview changes displayed keycaps, not the physical meaning of
+`mod`. A conflict is rejected both during recording/save and in PHP configuration.
+Backspace/Delete record those keys; use the explicit remove control to clear a
+binding. Escape cancels capture; Tab moves on. Save to persist changes panel-wide.
+**Reset tab** restores the unlocked shortcut draft to defaults; it does not save.
+
+## ShortcutConfiguration reference
+
+| Method | Default / effect |
+| --- | --- |
+| `make()` | Create a configuration; enhancements enabled. |
+| `enabled(bool = true)` | Enable/disable keyboard enhancements. |
+| `settings(bool = true)` | Show/hide the Keyboard settings tab. |
+| `footer(bool = true)` | Show/hide enhanced Search's shortcut footer. |
+| `bindings(string $action, array\|string\|null $bindings)` | Enforce 0–4 alternative bindings for one known action. |
+| `search()`, `sidebar()`, `theme()`, `help()`, `undo()` | Convenience setters accepting the same binding argument. |
+| `themeTransition(string $style)` | Lock none/reveal/eclipse/split/rise; default inherits the Details preference. |
+| `tableNavigation(bool = true)` | Enable/disable native table controls and their recorders. |
+| `navigationSequences(bool = true, array $overrides = [])` | Enable/disable sequences; optionally map authorized Resource/Page classes to sequences. |
+| `navigationHints(bool = true)` | Show/hide sequence hints. |
+| `commands(Command ...$commands)` | Register code-owned custom commands with unique IDs. |
+
+`Command::make($id)` accepts stable lowercase IDs of 1–80 characters using
+letters, digits, underscore, dot and hyphen, starting with a letter.
+`label()`/`group()` accept strings or closures; `visible()` accepts a boolean or
+closure. `keys()` accepts up to four global combinations. `url($url, newTab: true)`
+supports HTTP(S) or absolute application paths; `dispatch($event, $payload)`
+supports a valid event name up to 100 characters and a JSON payload up to 4096
+bytes. Each command needs a destination. Duplicate IDs and conflicting keys fail.
+
+Configure each panel with its own instance. Commands and navigation entries are
+resolved from that panel's authorized configuration. No shortcut grants access
+to a resource, another panel or a tenant that the user cannot ordinarily access.

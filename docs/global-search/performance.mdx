@@ -1,0 +1,78 @@
+---
+title: "Performance and operations"
+description: "Bound queries, transfer sizes and DOM work while preserving native behavior."
+icon: "gauge"
+---
+
+Pagination, result transport and virtualization solve different costs. Start by measuring the database request, response bytes and browser render separately.
+
+## A balanced configuration
+
+```php
+SearchConfiguration::make()
+    ->rootRecords(true, preload: false)
+    ->settings([
+        'search_page_size' => 25,
+        'search_pagination' => 'infinite',
+        'search_stream_limit' => 500,
+        'search_virtualization' => true,
+        'search_virtual_threshold' => 20,
+        'search_override_debounce' => true,
+        'search_debounce' => 300,
+        'search_min_length' => 2,
+    ]);
+```
+
+A 25-row page is usually a better starting point than sending every matching record. At the stream limit, the UI offers continuation rather than retaining an unlimited client list. Virtualization mounts the current range plus overscan, not every loaded row.
+
+## Keep database work bounded
+
+- Preserve native tenant scopes and policies in resource query modifiers.
+- Use keyset/cursor pagination with a deterministic sort where appropriate.
+- Use `simplePaginate()` when offset pagination is needed but an exact count is not.
+- Eager-load relations used by result details or policies to avoid per-row lookups.
+- Generate avatar thumbnails before searching; media resolvers should use hydrated data.
+- Add indexes for your actual filters and sort. A leading-wildcard `LIKE` query is not made index-efficient by changing the search window.
+- For very large or fuzzy record search, use an application search index through a custom source. Catalog fuzzy matching does not replace a database search engine.
+
+## Plain and native result transport
+
+Straightforward rows/actions use bounded data projections. Rich actions retain their native action HTML individually; groups, custom views and incompatible result semantics can retain full-row HTML. Repeated projected SVG icons are shared within a page payload.
+
+Keyed rows retain their record objects while another page is appended. Only range/index geometry changes, which avoids re-evaluating every visible action and media binding on each append. Forms and confirmation schemas remain native and are built when their action is mounted.
+
+JavaScript that has already been evaluated remains in the browser. Closing a search disposes owned observers/listeners where applicable; it does not promise to unload shared evaluated JavaScript.
+
+## Diagnose requests
+
+```php
+use Illuminate\Support\Facades\Log;
+
+SearchConfiguration::make()->diagnostics(
+    function (array $metrics): void {
+        Log::channel('search')->debug('Search diagnostics', [
+            'metrics' => $metrics,
+        ]);
+    }
+);
+```
+
+Configure the `search` logging channel in your application, or use an existing channel. Metrics contain source timing/failure status; when diagnostics are enabled they also collect query count and SQL milliseconds for measured source work. Transport diagnostics include encoded payload bytes and entry count. They are not an application-wide request trace or a database explain plan.
+
+Keep diagnostics off unless needed (`diagnostics(null)`), use a suitable log retention policy, and avoid logging result payloads, queries or personal data unnecessarily.
+
+## Failure handling
+
+An unavailable source is reported and isolated so other sources can remain useful. Authorization and validation failures are not silently converted into public results. Transport errors expose retry UI rather than replacing ready content with arbitrary time-delayed HTML.
+
+Test failures as well as successful searches: a source timeout, denied resource, revoked record permission, failed deletion and a query changed during a pending request.
+
+## Cache boundaries
+
+Theme preferences have a separate configurable cache (`FLEX_THEME_SETTINGS_CACHE_STORE`; default file store, one-hour TTL). Search query/source snapshots are request-local. FLEX does not use a shared global cache of permission-filtered search records by default.
+
+An external index/service cache must isolate user, panel, tenant, locale, filters and query as needed. Invalidating records and permissions is part of that service's contract. Do not use public CDN caching for private search responses.
+
+## Verification checklist
+
+Verify your own resources with empty/long queries, multiple pages, duplicate URLs with distinct identities, deleted records, denied actions, light/dark, mobile, keyboard navigation and native SPA navigation. Check custom views and action plugins explicitly. A small local fixture cannot certify every policy, database size or third-party integration.

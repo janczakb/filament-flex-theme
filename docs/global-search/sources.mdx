@@ -1,0 +1,143 @@
+---
+title: "Custom sources"
+description: "Return bounded pages from your own authorized query or service."
+icon: "database-zap"
+---
+
+Use `NativeResourceSource` for an existing Filament resource. Use `CallbackSearchSource` when data comes from a separate query, service or external index.
+
+## A paginated source
+
+```php
+use App\Models\Customer;
+use App\Filament\Resources\CustomerResource;
+use Filament\Facades\Filament;
+use Filament\GlobalSearch\GlobalSearchResult;
+use Flex\Theme\Search\CallbackSearchSource;
+use Flex\Theme\Search\SearchConfiguration;
+use Flex\Theme\Search\SearchPage;
+use Flex\Theme\Search\SearchRequest;
+
+$customers = CallbackSearchSource::make('customers')
+    ->label('Customers')
+    ->icon('hugeicons-user-group')
+    ->aliases(['clients', 'accounts'])
+    ->authorize(fn ($user): bool => $user->can('viewAny', Customer::class))
+    ->resolveUsing(function (SearchRequest $request): SearchPage {
+        $query = Customer::query()
+            ->where('workspace_id', Filament::getTenant()->getKey());
+
+        if ($request->query !== '') {
+            $query->where('name', 'like', '%'.$request->query.'%');
+        }
+
+        $page = $query->orderBy('id')->simplePaginate(
+            $request->perPage,
+            ['id', 'name', 'email'],
+            'searchPage',
+            $request->page,
+        );
+
+        $items = [];
+        foreach ($page->items() as $customer) {
+            if (! CustomerResource::canView($customer)) {
+                continue;
+            }
+            $items[] = new GlobalSearchResult(
+                $customer->name,
+                CustomerResource::getUrl('view', ['record' => $customer]),
+                ['Email' => $customer->email],
+            );
+        }
+
+        return new SearchPage($items, $page->hasMorePages());
+    });
+
+SearchConfiguration::make()->sources([$customers]);
+```
+
+This example assumes a tenant-enabled panel and a `workspace_id` relationship in your application. Adapt the scope to your schema. Parameter binding protects SQL values; literal wildcard handling and database indexing remain application decisions.
+
+The callback must return `SearchPage`. Return at most `$request->perPage` results, never a complete unbounded collection. `SearchPage` accepts at most 100 items and a next cursor of at most 4096 characters.
+
+## Cursor pagination
+
+Replace the paginator in the previous callback with:
+
+```php
+use Illuminate\Pagination\Cursor;
+
+$cursor = $request->cursor === null
+    ? null
+    : Cursor::fromEncoded($request->cursor);
+
+abort_if($request->cursor !== null && $cursor === null, 422);
+
+$page = $query->orderBy('id')->cursorPaginate(
+    $request->perPage,
+    ['id', 'name', 'email'],
+    'searchCursor',
+    $cursor,
+);
+
+// Build authorized $items from $page->items() as above.
+return new SearchPage(
+    $items,
+    $page->hasMorePages(),
+    $page->nextCursor()?->encode(),
+);
+```
+
+Use a deterministic, database-supported sort. The transport binds cursor tokens to the current search context. Your source still validates its own cursor format and access rules. A numbered page without a cursor requires an explicit offset strategy; for cursor-only sources, use `infinite` or `load-more` pagination.
+
+## Whitelisted filters
+
+```php
+CallbackSearchSource::make('customers')
+    ->filters(['status' => ['active' => 'Active', 'archived' => 'Archived']])
+    ->resolveUsing(function (SearchRequest $request): SearchPage {
+        $status = $request->context->filters['status'] ?? 'active';
+        // Apply the authorized query scope and this whitelisted value.
+        return app(CustomerSearchService::class)->page($request, $status);
+    });
+```
+
+`CustomerSearchService` must return a `SearchPage`. Do not execute arbitrary field names, sort expressions or SQL from context data.
+
+## Root search and preload
+
+```php
+$source->root(true, preload: false);
+```
+
+By default, callback sources are searched after entering their category. `root(true)` adds the source to root query results; `preload: true` also permits loading without a query. Keep preload bounded and avoid it for expensive external services.
+
+## A reusable source class
+
+Implement `SearchSource` when a callback becomes too large:
+
+```php
+interface SearchSource
+{
+    public function id(): string;
+    public function metadata(): array;
+    public function canAccess(): bool;
+    public function page(SearchRequest $request): SearchPage;
+}
+```
+
+Metadata includes an `id`, `label`, icon name, `layout` (`list`) and `enabled` status. Use `SearchSourceActions` if the source also exposes native navigation Actions through `navigationActions(): array`.
+
+## Add to native root results
+
+```php
+use Filament\GlobalSearch\GlobalSearchResults;
+
+SearchConfiguration::make()->searchUsing(
+    fn (string $query): GlobalSearchResults => app(ExternalSearchService::class)
+        ->resultsFor(Filament::auth()->user(), $query),
+    mergeWithNative: true,
+);
+```
+
+The service must return native `GlobalSearchResults` and enforce its own authorization. `mergeWithNative: false` replaces the native root result set, while configured navigation, commands and source categories remain separate. Prefer a paginated source for a large external result set.

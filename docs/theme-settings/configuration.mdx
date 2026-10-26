@@ -1,0 +1,232 @@
+---
+title: "PHP configuration and transfer"
+description: "Saved defaults, complete PHP configuration, partial locks, feature switches and portable JSON preferences."
+icon: "code"
+---
+
+## Keep saved preferences editable
+
+```php
+use Flex\Theme\FlexThemePlugin;
+
+return $panel->plugin(FlexThemePlugin::make());
+```
+
+The settings page requires the `manage-flex-theme` gate. Preferences belong to
+the native panel ID. Changing a draft does not persist until Save.
+
+## Hide the entire settings page
+
+```php
+FlexThemePlugin::make()->settingsPage(false);
+```
+
+This prevents page registration and access, including its search entry. It does
+not delete saved settings, branding, or disable the theme. Search, announcements,
+keyboard controls and recovery remain independently configurable in PHP.
+When rendering your own settings link, check `ThemeSettingsPage::canAccess()`.
+
+## Fully configure the theme in PHP
+
+```php
+FlexThemePlugin::make()->settings([
+    'brand' => 'Northstar',
+    'theme_preset' => 'tide',
+    'font' => 'Manrope',
+    'radius_scale' => 'small',
+    'form_radius_scale' => 'medium',
+    'shell_layout' => 'inset',
+    'customize_layout' => true,
+    'navigation' => 'sidebar',
+    'topbar' => true,
+    'sidebar_collapse' => 'icons',
+    'breadcrumbs' => true,
+    'max_content_width' => '7xl',
+    'color_mode' => 'both',
+    'default_theme_mode' => 'light',
+    'font_size' => 14,
+    'spacing' => 24,
+    'row_height' => 44,
+]);
+```
+
+`settings()` is a full code-owned configuration. **Omitted keys use package
+defaults, not the database.** A named preset contributes Accent/Base first;
+explicit values override that preset. Unknown and invalid keys fail validation.
+Saved data remains untouched and becomes available again if you remove the
+full PHP configuration.
+
+This mode hides the page even if you also call `settingsPage(true)`. Do not
+manually re-register `ThemeSettingsPage` to expose an editor that cannot take
+effect. Numeric radii are derived from the two scale values.
+
+## Lock only selected preferences
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'accent' => '#2865b3',
+    'font' => 'Manrope',
+    'shell_layout' => 'inset',
+    'radius_scale' => 'medium',
+]);
+```
+
+The page stays available. Unspecified preferences retain their saved values.
+Locked controls show **Managed in PHP**; server save, reset, import and compound
+pickers enforce the same values. Locking a preset also locks Accent/Base; locking
+corner scales locks the derived dimensions.
+
+`settingsOverrides()` accepts portable preference keys from Appearance, Colors,
+Layout, Details, Search, Keyboard and `custom_fonts`. It does not accept brand
+identity, branding paths or independent derived radius numbers. Use `settings()`
+or native branding PHP when the whole theme should be application-owned.
+
+## Precedence
+
+1. Start with full `settings()` plus package defaults, or saved panel preferences.
+2. Apply general `settingsOverrides()`.
+3. Apply dedicated sticky-topbar, Search settings and shortcut/transition overrides.
+4. Preserve native per-page content width and native authorization restrictions.
+
+```php
+use Flex\Theme\Keyboard\ShortcutConfiguration;
+use Flex\Theme\Search\SearchConfiguration;
+
+FlexThemePlugin::make()
+    ->settingsOverrides([
+        'font_size' => 14,
+        'search_page_size' => 25,
+        'sticky_topbar' => true,
+    ])
+    ->stickyTopbar(false)
+    ->search(SearchConfiguration::make()->settings(['search_page_size' => 50]))
+    ->shortcuts(ShortcutConfiguration::make()->bindings('search', 'mod+shift+k'));
+```
+
+This locks page size to 50 and standalone topbar sticking to false. To make a
+setting editable again, remove its PHP override. For native mode/layout
+inheritance, use the documented `inherit` or `null` values, and leave navigation
+override disabled. Do not assume every native `Panel` setter automatically locks
+an otherwise editable theme preference.
+
+## Hide individual feature tabs
+
+```php
+// Keep enhanced search, but hide its Search settings tab.
+FlexThemePlugin::make()->search(
+    SearchConfiguration::make()->settingsTab(false),
+);
+
+// Keep keyboard behavior, but hide its Keyboard settings tab.
+FlexThemePlugin::make()->shortcuts(
+    ShortcutConfiguration::make()->settings(false),
+);
+
+// Disable the features themselves instead.
+FlexThemePlugin::make()->search(false)->shortcuts(false)->recovery(false);
+```
+
+Search and Keyboard are independent. Disabling enhanced Search restores native
+search and removes the enhanced search controls; workspace/table shortcuts can
+remain enabled. Disabling recovery removes recovery behavior and its Undo
+recorder. Search access can be restricted with `SearchConfiguration::authorize()`;
+see [Search permissions](/docs/global-search/permissions).
+
+Appearance, Colors, Brand, Layout and Details currently have no public individual
+tab-visibility setter. Use permissions or `settingsPage(false)` to restrict the
+whole page, or locks to restrict particular preferences. Do not use an invented
+`tabs()` or `hiddenTabs()` API.
+
+## Export and import
+
+**Export settings** downloads validated preferences from the current draft,
+including custom Google Font metadata. It excludes `brand`, all uploaded asset
+paths and derived radius numbers. The format is:
+
+```json
+{
+  "format": "flex-theme-settings",
+  "version": 1,
+  "settings": {
+    "accent": "#2865b3",
+    "base_tint": 12,
+    "font": "Manrope",
+    "radius_scale": "small",
+    "form_radius_scale": "medium",
+    "shell_layout": "inset"
+  }
+}
+```
+
+**Import settings** accepts an uploaded JSON file or pasted JSON, limited to
+65,536 bytes and JSON depth 16. It rejects unknown/retired keys, invalid types,
+unsupported option values, invalid font metadata and shortcut conflicts.
+
+The second step displays effective changes, including locked values marked as
+skipped. Applying changes updates only the draft; Save is still required. If the
+draft, input or locks change after review, review again. Uploading a preference
+file does not install branding or execute code.
+
+The programmatic transfer API uses the same validation:
+
+```php
+use Flex\Theme\ThemeSettings;
+use Flex\Theme\ThemeSettingsTransfer;
+
+$panelId = 'admin';
+$draft = ThemeSettings::get($panelId);
+$json = ThemeSettingsTransfer::export($panelId, $draft);
+$incoming = ThemeSettingsTransfer::decode($panelId, $json);
+$review = ThemeSettingsTransfer::review($panelId, $draft, $incoming);
+```
+
+These helpers do not authorize a caller or save the review. Your own endpoints
+must enforce the gate and retain the review/confirmation workflow.
+
+## Other plugin switches
+
+| Method | Default | Effect |
+| --- | --- | --- |
+| `databaseNotificationsDropdown(false)` | Enabled | Keep native database-notification presentation instead of FLEX's dropdown replacement. It does not disable native notifications. |
+| `faviconManifest(false)` | Enabled | Omit the generated favicon web-app manifest link. |
+| `collapsedBrandLogo($htmlOrClosure)` | Default mark | Application-owned compact artwork when no uploaded compact mark overrides it. |
+| `announcementBars([...])` | Empty | Register typed, code-owned [announcement bars](/docs/announcements/overview). |
+| `recovery($configuration)` | Disabled | Enable explicitly profiled [recovery](/docs/workspace/recovery). |
+| `shortcuts($configuration)` | Enabled | Configure [keyboard controls](/docs/workspace/keyboard). |
+| `search($configuration)` | Enabled | Configure [enhanced search](/docs/global-search/configuration). |
+
+## Storage, cache and deployment
+
+Saved preferences are stored in `flex_theme_settings`, keyed by panel ID. Read the
+effective snapshot with `ThemeSettings::get('admin')`. Ordinary read paths use a
+request-scoped snapshot and a separate shared cache. Publish optional config:
+
+```shell
+php artisan vendor:publish --tag=flex-theme-config
+```
+
+`flex-theme.settings_cache.store` defaults to `file` and can be overridden with
+`FLEX_THEME_SETTINGS_CACHE_STORE=redis`. The store must support atomic locks.
+`flex-theme.settings_cache.ttl` defaults to 3600 seconds. Normal saves invalidate
+after commit; full PHP configuration bypasses stored preference reads.
+
+If an authorized application process writes the settings row outside the normal
+save API, invalidate that panel after the change:
+
+```php
+ThemeSettings::forgetCache('admin');
+```
+
+Do not flush unrelated caches. A custom process using `ThemeSettings::save()`
+must authorize its caller itself; the native page supplies that gate check.
+
+## Translations
+
+```shell
+php artisan vendor:publish --tag=flex-theme-translations
+```
+
+Override package keys in `lang/vendor/flex-theme/{locale}/settings.php`,
+`keyboard.php`, `search.php` and the other published language files. Settings
+labels follow Laravel's current locale; stored keys and values do not change.
+Locale selection remains your application's responsibility.

@@ -1,0 +1,144 @@
+---
+title: "Recipes"
+description: "Copy focused configurations for common search requirements."
+icon: "book-open"
+---
+
+Each recipe extends an existing FLEX Theme installation. Import the classes shown in its snippet and replace application resource/model/service classes with your own.
+
+## 1. Require a category before querying records
+
+```php
+use Flex\Theme\Search\SearchConfiguration;
+
+SearchConfiguration::make()
+    ->rootRecords(false)
+    ->discover(pages: true, resources: true);
+```
+
+Users can find the Customers category first, then enter a query inside it. This avoids calling every root-searchable resource for each root query.
+
+## 2. A PHP-controlled search without settings UI
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Search\SearchConfiguration;
+
+FlexThemePlugin::make()
+    ->settingsPage(false)
+    ->search(
+        SearchConfiguration::make()
+            ->settingsTab(false)
+            ->settings([
+                'search_page_size' => 25,
+                'search_pagination' => 'load-more',
+                'search_virtualization' => true,
+            ])
+    );
+```
+
+## 3. Only Customers and Orders
+
+```php
+use Flex\Theme\Search\NativeResourceSource;
+use Flex\Theme\Search\SearchConfiguration;
+
+SearchConfiguration::make()->configureResourcesUsing(
+    fn (NativeResourceSource $source, string $resource) => $source->authorize(
+        in_array($resource, [CustomerResource::class, OrderResource::class], true)
+    )
+);
+```
+
+The default native root adapter also receives these configured sources. A custom provider must enforce its own resource allowlist.
+
+## 4. One explicit customer source
+
+```php
+SearchConfiguration::make()
+    ->discover(pages: false, resources: false)
+    ->rootRecords(false)
+    ->builtInCommands([])
+    ->sources([
+        NativeResourceSource::make(CustomerResource::class)->root(true),
+    ]);
+```
+
+This explicitly chooses one source instead of automatically discovering all registered resources. Source and record policies still apply.
+
+## 5. A source below a parent resource
+
+```php
+use App\Filament\Resources\CustomerResource;
+use App\Filament\Resources\OrderResource;
+use App\Models\Customer;
+use Filament\Facades\Filament;
+use Flex\Theme\Search\NativeResourceSource;
+
+NativeResourceSource::make(OrderResource::class)->parentUsing(
+    fn (): array => [
+        CustomerResource::class => Customer::query()
+            ->where('workspace_id', Filament::getTenant()->getKey())
+            ->findOrFail(session('selected_customer_id')),
+    ]
+);
+```
+
+This assumes native Filament parent-resource registration and a tenant-enabled application. Parent models are re-resolved and authorized; the relationship to each ancestor is verified. Do not populate the selected parent from an unchecked client ID.
+
+## 6. Search more than one panel
+
+```php
+SearchConfiguration::make()
+    ->pagePanels(['admin', 'customer'])
+    ->resourcePanels(['admin', 'customer'])
+    ->panelExclusions([
+        'customer' => [InternalMetricsResource::class],
+    ]);
+```
+
+## 7. Add an authorized help command
+
+```php
+use Filament\Actions\Action;
+use Flex\Theme\Search\SearchCommand;
+
+SearchConfiguration::make()->commands([
+    SearchCommand::make('support', 'Open support')
+        ->anyContext()
+        ->aliases(['help', 'contact'])
+        ->authorize(fn ($user): bool => $user->is_active)
+        ->action(Action::make('support')->url('/support')),
+]);
+```
+
+## 8. Open a category from a native action
+
+```php
+use Filament\Actions\Action;
+
+Action::make('find-customers')
+    ->label('Find customers')
+    ->icon('hugeicons-search-01')
+    ->alpineClickHandler("\$dispatch('flex-search-open', { source: 'customers' })");
+```
+
+Here `customers` is a registered custom source ID. For native resources, derive the source ID in PHP instead of guessing it. See the [quickstart event examples](/docs/global-search/quickstart).
+
+## 9. Persist favorites in the database
+
+```php
+use Flex\Theme\Search\DatabaseSearchCollectionStore;
+
+SearchConfiguration::make()->collections(new DatabaseSearchCollectionStore);
+```
+
+Run the package migrations and configure a shared lock backend when using multiple servers. [History and favorites](/docs/global-search/history-favorites) explains the store contract.
+
+## 10. Return to native search
+
+```php
+FlexThemePlugin::make()->search(false);
+```
+
+The theme no longer replaces the native global-search view. Your existing native provider remains configured on the panel. Remove or disable FLEX shortcuts separately if your replacement uses different hotkeys.

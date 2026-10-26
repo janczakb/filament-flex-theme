@@ -1,0 +1,78 @@
+---
+title: "Panels and tenants"
+description: "Search authorized panels and workspaces without crossing their action boundaries."
+icon: "building-2"
+---
+
+## Search chosen panels
+
+```php
+SearchConfiguration::make()
+    ->pagePanels(['admin', 'shop'])
+    ->resourcePanels(['admin', 'shop']);
+```
+
+Panel IDs are the IDs registered with Filament. Page and resource panel selections are independent. The current panel is the default when a selection is omitted.
+
+## Search all except selected panels
+
+```php
+SearchConfiguration::make()
+    ->pagePanels('*', except: ['internal'])
+    ->resourcePanels('*', except: ['internal']);
+```
+
+The selection accepts an array of IDs or the wildcard `*`. It does not accept an arbitrary single panel-ID string.
+
+## Exclude classes from one panel
+
+```php
+SearchConfiguration::make()
+    ->resourcePanels(['admin', 'shop'])
+    ->panelExclusions([
+        'shop' => [InternalMetricsResource::class, OperationsPage::class],
+    ]);
+```
+
+Access is checked using the destination panel and guard. Discovery restores the originating panel afterwards. The destination must be registered and accessible to the current principal; choosing `*` does not bypass panel access.
+
+## Actions in another panel
+
+Links navigate normally. Native modal actions are handed off to their destination panel rather than executed under the originating guard. Handoffs are short-lived and checked against user, panel, guard and tenant. The destination must have an enabled, accessible FLEX search experience to mount the handed-off action. Without it, the integration exposes ordinary permitted links and omits unsupported modal handoffs.
+
+## Automatic tenant switching
+
+When native Filament tenancy is enabled and the user implements `HasTenants`, the Workspaces source registers automatically.
+
+```php
+SearchConfiguration::make()->tenants(false);
+```
+
+Use this to omit the switcher. Native `canAccessTenant()` checks remain in force.
+
+## A paginated tenant provider
+
+The default adapter uses the user's native `getTenants()` collection. For many tenants, provide a bounded paginator:
+
+```php
+use Flex\Theme\Search\SearchRequest;
+
+SearchConfiguration::make()->tenants(
+    using: function (SearchRequest $request, $user) {
+        return $user->workspaces()
+            ->when($request->query !== '', fn ($query) => $query
+                ->where('name', 'like', '%'.$request->query.'%'))
+            ->orderBy('id')
+            ->simplePaginate(
+                $request->perPage,
+                ['workspaces.*'],
+                'workspacePage',
+                $request->page,
+            );
+    },
+);
+```
+
+The example assumes your user has a `workspaces()` relationship and that the panel's tenant model uses that table. The custom provider applies search and pagination; the adapter still verifies returned model types and `canAccessTenant()` for each item. Use `simplePaginate()` when a total count is unnecessary.
+
+Tenant switching uses native Filament URLs. Tenant avatars use native `HasAvatar` when available, with initials as a fallback. Result history/favorites are isolated by panel, user, guard, tenant and locale.

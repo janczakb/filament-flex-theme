@@ -1,0 +1,40 @@
+---
+title: "Global Search"
+description: "Find pages, records and commands from one permission-aware search window."
+icon: "search"
+---
+
+FLEX Search brings your panel's native Filament global search into the theme's search window. Registered pages and searchable resources are discovered automatically. You can add commands, external data sources and searches across panels without replacing your resource policies.
+
+<CardGroup cols={2}>
+  <Card title="Start with your existing panel" icon="rocket" href="/docs/global-search/quickstart">Enable search with the native resources you already use.</Card>
+  <Card title="Configure the experience" icon="sliders-horizontal" href="/docs/global-search/configuration">Choose pagination, appearance, limits and PHP overrides.</Card>
+  <Card title="Control access" icon="shield-check" href="/docs/global-search/permissions">Apply panel access, resource policies and additional search gates.</Card>
+  <Card title="Build your own sources" icon="database" href="/docs/global-search/sources">Connect bounded queries, filters and application services.</Card>
+</CardGroup>
+
+## What users can do
+
+- Search native resource records and open registered pages.
+- Select a resource to search only within that category. Its name becomes a pill in the search input.
+- Use record actions on the right of each result. Extra actions move into a menu when space is limited.
+- Run commands such as changing the color scheme or opening a permitted settings page.
+- Move between authorized panels or tenants.
+- Return to recent results and keep permitted favorites.
+- Navigate results with the keyboard and configure shortcuts.
+
+## What remains native
+
+Filament owns resource queries, resource titles, searchable attributes, record URLs, policies, forms, validation and action confirmations. FLEX Search supplies the discovery, presentation, transport and navigation around them.
+
+<Note>
+A custom Filament global-search provider continues to own its own authorization and category behavior. FLEX configuration does not silently rewrite a custom provider's query implementation.
+</Note>
+
+## Presentation
+
+The default desktop window is bounded to the configured width and height. Mobile uses a full-screen presentation below 768 px. `fullscreen(true)` also makes the desktop presentation full screen.
+
+The current resource appears inside the input rather than in a separate back toolbar. Escape closes the search when it is the active dialog; an active native child dialog retains its own Escape handling. Backspace returns to the previous context when the query input is empty.
+
+FLEX Fields is optional. Search works with native Filament resources and native Actions without installing FLEX Fields.

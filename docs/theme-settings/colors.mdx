@@ -1,0 +1,71 @@
+---
+title: "Colors"
+description: "Configure native semantic palettes and compare components in light and dark mode."
+icon: "palette"
+---
+
+The Colors tab configures the six semantic names used by Filament. Changes feed
+native palettes, so supported buttons, badges, notifications and other native
+components can use the same semantic color names.
+
+| Native name | Settings key | Default seed |
+| --- | --- | --- |
+| `primary` | `accent` | `#6c43bf` |
+| `success` | `color_success` | `#80cd00` |
+| `warning` | `color_warning` | `#edb200` |
+| `danger` | `color_danger` | `#ff2357` |
+| `info` | `color_info` | `#00d2ef` |
+| `gray` | `color_gray` | `#71717a` |
+
+Every value is a six-digit HEX color. Primary is the same Accent used in
+Appearance; it is not a second independent setting. The preview shows the same
+components in light and dark columns without changing the current app mode.
+
+The default semantic palettes contain tuned light/dark status pairs. Custom
+seeds use Filament's palette generation; a HEX seed is not a promise that every
+component paints that exact HEX in both modes. Components select appropriate
+shades for their native variant. Literal application colors remain literal.
+
+## Enforce selected palettes
+
+```php
+use Flex\Theme\FlexThemePlugin;
+
+FlexThemePlugin::make()->settingsOverrides([
+    'accent' => '#2865b3',
+    'color_success' => '#15803d',
+    'color_warning' => '#b45309',
+    'color_danger' => '#be123c',
+    'color_info' => '#0369a1',
+    'color_gray' => '#64748b',
+]);
+```
+
+Other preferences remain editable. Save/import/reset enforce the same locks.
+
+## Use semantic colors
+
+```php
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\TextColumn;
+
+Action::make('archive')->color('warning');
+
+TextColumn::make('status')->badge()->color(fn (string $state): string => match ($state) {
+    'active' => 'success',
+    'review' => 'warning',
+    'failed' => 'danger',
+    default => 'gray',
+});
+
+Notification::make()->title('Changes saved')->success()->send();
+```
+
+FLEX does not add a built-in `secondary` picker. Additional application color
+names can still be registered through native Filament PHP configuration; they
+are not portable Theme Settings keys. Use the six documented names when you
+want components to follow the editor automatically.
+
+**Reset tab** restores these preferences in the draft, including Primary.
+Because Primary is shared, resetting Colors can also change Accent in Appearance.

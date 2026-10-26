@@ -1,0 +1,87 @@
+---
+title: "History and favorites"
+description: "Store bounded references, with current access checked when results are restored."
+icon: "star"
+---
+
+Recent results and favorites store result references rather than complete model payloads. Opening them resolves the result again under the current panel, user, guard, tenant and locale. Missing or inaccessible records are omitted.
+
+## Configure the visible collections
+
+```php
+SearchConfiguration::make()
+    ->history(true)
+    ->favorites(true)
+    ->settings([
+        'search_recent_limit' => 8,
+        'search_favorite_limit' => 12,
+    ]);
+```
+
+The default store is session-backed. History is not a permanent activity audit, and a favorite is not a grant of record access.
+
+## Disable a collection
+
+```php
+SearchConfiguration::make()->history(false)->favorites(false);
+```
+
+The corresponding saved preference is locked. Hiding a control does not require changing your model or resource policies.
+
+## Persist across sessions
+
+```php
+use Flex\Theme\Search\DatabaseSearchCollectionStore;
+
+SearchConfiguration::make()->collections(
+    new DatabaseSearchCollectionStore
+);
+```
+
+Run the package migrations before enabling the database store:
+
+```bash
+php artisan migrate
+```
+
+The store uses the package's `flex_theme_search_collections` table and bounded JSON references. You can choose another Laravel database connection with `new DatabaseSearchCollectionStore(connection: 'search')`; that connection must have the required table.
+
+Database mutations use a scoped cache lock. On multiple application nodes, configure a shared lock-capable cache store through `FLEX_THEME_SETTINGS_CACHE_STORE`, for example Redis, so concurrent favorite changes share the same lock backend.
+
+## Implement a store
+
+```php
+interface SearchCollectionStore
+{
+    public function read(string $scope, string $collection, int $limit): array;
+    public function write(string $scope, string $collection, array $references, int $limit): void;
+}
+```
+
+The supplied scope is opaque. Preserve it as an isolation boundary; never collapse all users or tenants into one key. Store only bounded references and honor the requested limit.
+
+For concurrent writes, implement `AtomicSearchCollectionStore` as well:
+
+```php
+public function mutate(
+    string $scope,
+    string $collection,
+    int $limit,
+    Closure $callback,
+): mixed;
+```
+
+Run the callback while the scope/collection is locked. It returns `[new references, operation result]`; persist the bounded references atomically and return the operation result. `collections(null)` restores the default session store.
+
+## Category-level favorites
+
+The category adapter supports a per-result rule:
+
+```php
+SearchCategory::make('documents')
+    ->favorites(fn (GlobalSearchResult $result): bool =>
+        ! str_starts_with($result->url, '/confidential/')
+    );
+```
+
+This is presentation control in addition to actual data authorization. Do not infer a security policy from a URL prefix in a real application when a model policy or explicit result property is available.

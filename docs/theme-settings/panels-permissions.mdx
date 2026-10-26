@@ -1,0 +1,110 @@
+---
+title: "Panels and permissions"
+description: "Restrict theme administration, configure panels independently and understand tenant boundaries."
+icon: "shield-check"
+---
+
+## Authorize settings administration
+
+The native settings page requires all three conditions: the current panel has
+FLEX Theme, that plugin allows its settings page, and Laravel's
+`manage-flex-theme` gate allows the current user. The package does not automatically
+give every authenticated user this ability.
+
+Define the gate in your application's service provider. Adapt the role/attribute
+check to your application:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('manage-flex-theme', function (User $user): bool {
+    return (bool) $user->is_admin;
+});
+```
+
+The gate protects page access and save/upload/import/export/reset/font actions.
+Your native panel authentication, `canAccessPanel()` and resource policies still
+apply. Hiding a navigation item alone is not an authorization strategy.
+
+## Give different panels different themes
+
+Create a separate plugin instance in each native panel provider. Stable native
+panel IDs identify saved preference rows and owned branding assets.
+
+```php
+// AdminPanelProvider::panel()
+return $panel
+    ->id('admin')
+    ->plugin(
+        Flex\Theme\FlexThemePlugin::make()->settingsOverrides([
+            'accent' => '#2865b3',
+            'shell_layout' => 'inset',
+        ]),
+    );
+```
+
+```php
+// PartnerPanelProvider::panel()
+return $panel
+    ->id('partner')
+    ->plugin(
+        Flex\Theme\FlexThemePlugin::make()->settings([
+            'brand' => 'Partner workspace',
+            'theme_preset' => 'grove',
+            'font' => 'Manrope',
+            'radius_scale' => 'small',
+            'color_mode' => 'light',
+        ]),
+    );
+```
+
+Admin retains an editable settings page except for its locked fields. Partner is
+fully PHP-configured and has no settings page. A save in Admin does not rewrite
+Partner's preferences. Register each panel's native theme CSS/Vite entry too.
+Do not reuse one mutable plugin instance across panel providers.
+
+## Permit administration only in selected panels
+
+```php
+use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('manage-flex-theme', function (User $user): bool {
+    return Filament::getCurrentPanel()?->getId() === 'admin'
+        && (bool) $user->is_admin;
+});
+```
+
+For a panel that should never expose the page, also use `settingsPage(false)`.
+Ordinary panel users still see the saved design without needing this gate.
+
+## Links, navigation and search
+
+```blade
+@if (\Flex\Theme\Pages\ThemeSettingsPage::canAccess())
+    <a href="{{ \Flex\Theme\Pages\ThemeSettingsPage::getUrl(['tab' => 'brand']) }}">
+        Brand settings
+    </a>
+@endif
+```
+
+Use this pattern in custom navigation, dashboard links and user-menu entries.
+The package's native page access check also applies to its search discovery.
+`settingsPage(false)` is a real feature switch; overriding only a menu item's
+visibility is not an equivalent replacement.
+
+## Tenant and user scope
+
+Theme Settings is **panel-scoped**, not tenant-scoped or user-scoped. In a
+multi-tenant panel, an authorized save affects the panel shared by those tenants.
+Restrict the gate to operators who should control that shared design. This is
+different from announcement cache/dismissal scope and recovery history, which
+include user/tenant context.
+
+Per-tenant branding/settings storage requires an application integration; it is
+not enabled by selecting a tenant or by importing preferences. Native remembered
+light/dark mode remains browser state, independently of the shared available-mode
+policy. Search access, resource policies, announcement-provider visibility and
+recovery permissions each retain their own checks.

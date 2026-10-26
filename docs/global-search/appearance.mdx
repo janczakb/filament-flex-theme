@@ -1,0 +1,154 @@
+---
+title: "Views and presentation"
+description: "Customize the search window, state views, categories and translations."
+icon: "paintbrush"
+---
+
+## Window settings
+
+```php
+SearchConfiguration::make()
+    ->placeholder(fn (): string => __('Search your workspace…'))
+    ->fullscreen(false)
+    ->settings([
+        'search_category_position' => 'top',
+        'search_width' => 816,
+        'search_height' => 720,
+        'search_highlight' => true,
+    ]);
+```
+
+The window follows the theme's light/dark palette, radius and motion settings. Mobile has its own full-screen layout and does not show the desktop keyboard footer.
+
+## Empty states
+
+```php
+SearchConfiguration::make()
+    ->emptyView('search.no-results', context: 'results')
+    ->emptyView('search.no-recent', context: 'recent');
+```
+
+Supported contexts: `results`, `discover`, `category`, `recent`, `favorites`. The view receives `context`, `searchQuery` and `category`.
+
+```blade
+{{-- resources/views/search/no-results.blade.php --}}
+<div class="app-search-empty" role="status">
+    <h3>No matching records</h3>
+    <p>Try another name or a shorter search.</p>
+</div>
+```
+
+An eligible cursor stream activates its empty state when its final result is deleted, without rebuilding the entire list. Keep empty-state components lightweight; their Alpine content is activated only when that state is needed.
+
+## Loading, pending and errors
+
+```php
+SearchConfiguration::make()
+    ->stateView('search.loading', context: 'loading')
+    ->stateView('search.pending', context: 'pending')
+    ->stateView('search.error', context: 'error');
+```
+
+Use a small status or skeleton in these views. Preserve accessible status/error messaging and retry behavior when overriding an error view.
+
+## Result views
+
+```php
+SearchConfiguration::make()->resultView('search.result');
+```
+
+A custom result view receives the result and search rendering context, including action/media resolvers. A useful starting point delegates to the supplied native-compatible row:
+
+```blade
+{{-- resources/views/search/result.blade.php --}}
+@include('flex-theme::search-result')
+```
+
+Then copy only the row markup you need to change. Preserve stable result keys, accessible link text, authorization-filtered actions and the search action owner attributes. Custom result views retain native HTML fallback; do not assume they receive plain-row transport or incremental deletion automatically.
+
+## Publish Blade overrides
+
+```bash
+php artisan vendor:publish --tag=flex-theme-views
+```
+
+This publishes the package views to `resources/views/vendor/flex-theme`. Override only what you maintain and review changes after package updates. Publishing all views without reviewing them can leave an application using older markup.
+
+## Category adapters
+
+`SearchCategory` provides an adapter for an existing native-result collection:
+
+```php
+use Filament\GlobalSearch\GlobalSearchResult;
+use Flex\Theme\Search\SearchCategory;
+
+SearchConfiguration::make()->categories([
+    SearchCategory::make('handbook')
+        ->label('Handbook')
+        ->icon('hugeicons-book-open-01')
+        ->layout('chips')
+        ->sort(10)
+        ->limit(12)
+        ->visible(fn (): bool => Filament::auth()->user()->can('view-handbook'))
+        ->results(fn (string $query): array =>
+            app(HandbookSearch::class)->search($query, limit: 12)
+        ),
+]);
+```
+
+The application service returns authorized native `GlobalSearchResult` objects. Layout values are `tiles`, `list` and `chips`. `suggestions()` supplies empty-query items; `browse()` supplies a bounded paginator/iterable. `source()` associates a native category label, `mediaUsing()` supplies presentation, `actions()` adds native actions, and `emptyView()` overrides the category empty state. Prefer `CallbackSearchSource` for a new large, paginated data source.
+
+## Translations
+
+Search and keyboard strings are in the package's `lang/en/search.php` and `lang/en/keyboard.php`. Override the needed keys in Laravel's `lang/vendor/flex-theme/{locale}/search.php` and `keyboard.php` files. Resource labels and your callback labels can use normal Laravel translation functions.
+
+
+Theme Settings has complete English and Polish translations in `lang/en/settings.php` and `lang/pl/settings.php`. It follows Laravel’s active locale, including option labels, notices and import review. Publish translations with `php artisan vendor:publish --tag=flex-theme-translations` and customize `lang/vendor/flex-theme/{locale}/settings.php` in your application. Persisted configuration keys do not depend on the locale.
+
+## Sidebar settings and shortcuts
+
+In **Theme Settings → Layout**, the illustrated desktop sidebar choices are **Keep expanded**, **Collapse to icons**, and **Hide completely**. The saved/PHP value `inherit` preserves native panel configuration; there is no Auto tile. Both collapse modes keep the native toggle button; Keep expanded disables desktop collapsing. Mobile retains its native navigation drawer.
+
+The **Collapsible navigation groups** switch controls whether sidebar groups can expand and collapse. Individual groups configured with `collapsible(false)` remain fixed. Reset Layout restores the panel defaults. These sidebar controls appear only in layouts with a sidebar; switching to top navigation retains the saved preference without applying it. Sticky topbar settings appear only for a standalone topbar.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'sidebar_collapse' => 'icons', // inherit, fixed, icons, hidden
+    'sidebar_groups_collapsible' => false, // null inherits the panel default
+]);
+```
+
+PHP overrides lock the corresponding controls and are enforced during import, reset and save. Layout preferences take effect after saving. Search and keyboard sidebar commands remain available only when the actual panel supports toggling its sidebar.
+
+### User menu
+
+Theme Settings keeps the selected tab in the URL using `tab=appearance`,
+`tab=colors`, `tab=brand`, `tab=layout`, `tab=details`, `tab=search`, or `tab=keyboard`. A copied link opens
+the same tab after reloading, and these identifiers stay the same in every language.
+Search and Keyboard remain available only when their corresponding features are enabled.
+
+In **Theme Settings → Layout**, **User menu** shows or hides the native account menu.
+When enabled, illustrated cards select **Filament default**, **Topbar**, or **Sidebar**.
+The default follows your panel configuration: normally topbar, or sidebar when the topbar is disabled.
+Turning the menu off hides the position selector and keeps its saved preference.
+
+Positions unavailable in the selected layout are disabled. A saved sidebar preference
+temporarily uses the native layout position in a top-navigation layout, and resumes
+when the desktop sidebar returns. The same fallback applies to a topbar preference
+when the topbar is disabled. Profile, logout, custom menu items and authorization
+remain controlled by Filament. A native `->userMenu(false)` or a false conditional
+menu callback in PHP cannot be overridden by Theme Settings.
+
+```php
+FlexThemePlugin::make()->settingsOverrides([
+    'user_menu_enabled' => true, // null inherits PHP; false hides the menu
+    'user_menu_position' => 'sidebar', // inherit, topbar, sidebar
+]);
+```
+
+These overrides lock the matching controls. Reset Layout restores inheritance for
+unlocked values. Import and export include both preferences; save applies them.
+
+For the complete current editor, all 81 settings and PHP precedence, see
+[Theme Settings](/docs/theme-settings/overview) and
+[All settings reference](/docs/theme-settings/reference).

@@ -1,0 +1,82 @@
+---
+title: "Avatars and images"
+description: "Show lightweight thumbnails with initials and accessible fallback behavior."
+icon: "image"
+---
+
+Provide a URL that already points to an appropriate thumbnail. `ResultMedia` describes presentation; it does not download, resize or generate files during a search request.
+
+## Use the hydrated resource record
+
+```php
+use App\Models\User;
+use Filament\GlobalSearch\GlobalSearchResult;
+use Flex\Theme\Search\MediaSearchResult;
+use Flex\Theme\Search\ResultMedia;
+
+SearchConfiguration::make()->mediaUsing(
+    static function (GlobalSearchResult $result): ?ResultMedia {
+        if (! $result instanceof MediaSearchResult || ! $result->record instanceof User) {
+            return null;
+        }
+
+        $user = $result->record;
+
+        return ResultMedia::avatar($user->getFilamentAvatarUrl())
+            ->initials($user->getFilamentName())
+            ->alt($user->getFilamentName());
+    }
+);
+```
+
+This example assumes your User implements the native `HasAvatar` and `HasName` methods. It uses the existing record object instead of looking the user up again for every result.
+
+## Attach media to a custom result
+
+```php
+new MediaSearchResult(
+    title: $customer->name,
+    url: CustomerResource::getUrl('view', ['record' => $customer]),
+    details: ['Email' => $customer->email],
+    media: ResultMedia::avatar($customer->avatar_thumbnail_url)
+        ->initials($customer->name)
+        ->alt($customer->name),
+    record: $customer,
+    identity: 'customer:'.$customer->getKey(),
+);
+```
+
+A stable `identity` distinguishes records that share the same URL. Without it, custom result identity falls back to category plus URL. Native resource results already carry stable record identities.
+
+## Rectangular images and responsive thumbnails
+
+```php
+ResultMedia::image('/storage/products/watch.webp')
+    ->alt('Silver watch')
+    ->srcset([
+        80 => '/storage/products/watch-80.webp',
+        160 => '/storage/products/watch-160.webp',
+    ]);
+```
+
+Supply at most six variants with widths from 40 to 320 px. The default row media slot is 40 px. Images use lazy loading, asynchronous decoding and fixed dimensions to reserve their layout space. Generate thumbnails on upload or in background processing rather than on every search response.
+
+`avatar($url, $thumbnailUrl)` and `image($url, $thumbnailUrl)` accept an optional preferred thumbnail URL. Allowed values are HTTP(S) URLs or absolute local paths beginning with a single `/`; protocol-relative and control-character URLs are rejected.
+
+## Initials and failed images
+
+```php
+ResultMedia::avatar(null)->initials('Olivia Bennett')->alt('Olivia Bennett');
+```
+
+Initials use Unicode letters/numbers and ignore punctuation-only tokens. A missing or failed portrait retains its fallback rather than leaving a broken-image icon. Explicit result media takes precedence over category media, which takes precedence over the global `mediaUsing()` callback.
+
+## Optional Gravatar
+
+```php
+ResultMedia::gravatar($user->email, default: 'identicon')
+    ->initials($user->name)
+    ->alt($user->name);
+```
+
+This uses an external provider. The allowed default styles are `mp`, `identicon`, `monsterid`, `wavatar`, `retro`, `robohash`, `blank`. Prefer first-party thumbnail URLs when external avatar requests are inappropriate for your application.

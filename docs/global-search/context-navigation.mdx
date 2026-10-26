@@ -1,0 +1,86 @@
+---
+title: "Context navigation"
+description: "Open a source with validated data and return through its context path."
+icon: "layers"
+---
+
+A selected source appears as a pill in the input. Typing after it searches that source. Returning restores the previous query and context. Record actions remain on the result's right edge rather than in another drill-down screen.
+
+## Open a scoped child source
+
+```php
+use Flex\Theme\Search\SearchItem;
+
+new SearchItem(
+    title: 'Orders for Olivia Bennett',
+    url: '#source-orders',
+    sourceId: 'orders',
+    closeOnSelect: false,
+    contextData: ['customer_id' => (string) $customer->getKey()],
+    icon: 'hugeicons-shopping-bag-01',
+);
+```
+
+Return this item from an authorized source. The destination source reads the data from its `SearchRequest`:
+
+```php
+$customerId = $request->context->data['customer_id'] ?? null;
+abort_unless(is_string($customerId), 422);
+
+// Resolve through the current tenant/user scope before querying related orders.
+$customer = Customer::query()
+    ->where('workspace_id', Filament::getTenant()->getKey())
+    ->findOrFail($customerId);
+
+abort_unless(CustomerResource::canView($customer), 403);
+```
+
+A signed context protects navigation integrity. It does not replace record authorization. Keep large identifiers as strings to avoid JavaScript integer precision loss.
+
+## Open through a command
+
+```php
+SearchCommand::make('open-orders', 'Customer orders')
+    ->context('customers')
+    ->opens('orders', fn (SearchContext $trail): array => [
+        'customer_id' => (string) $trail->data['customer_id'],
+    ]);
+```
+
+The callback assumes that the current `customers` context already carries an authorized `customer_id`. Use a source result to provide record-specific context; a category alone does not imply a selected record.
+
+## Target an exact route
+
+```php
+SearchCommand::make('export-customer-orders', 'Export customer orders')
+    ->withinPath(['customers', 'orders'])
+    ->filterUsing(fn (SearchContext $trail, string $query): bool =>
+        isset($trail->data['customer_id']) &&
+        ($query === '' || str_contains('export customer orders', mb_strtolower($query)))
+    )
+    ->closeOnSelect(false)
+    ->action(Action::make('export')->requiresConfirmation()->action(
+        fn () => app(OrderExportService::class)->start()
+    ));
+```
+
+The command service must resolve and authorize its intended scope itself; a matching context is not a grant to export data.
+
+## SearchContext fields
+
+| Field / method | Purpose |
+| --- | --- |
+| `source` | Current source ID. |
+| `filters` | Whitelisted filter values. |
+| `path` | Ancestor source IDs. |
+| `data` | Validated current context data. |
+| `ancestors` | Ancestor data frames. |
+| `route()` | Ancestor path plus current source. |
+| `parentData($source)` | Data of the nearest matching ancestor. |
+| `fingerprint()` | Opaque identity for this context. |
+
+Context paths and data are bounded. A source ID uses lowercase letters, digits and hyphens, starts with a letter and is at most 80 characters. The path accepts at most eight segments; context data is bounded to 4096 encoded bytes and validated scalar/array structures. Do not put models, secrets or full record payloads in it.
+
+## Keyboard behavior
+
+Backspace returns when the input is empty. With text present, it edits the text normally. Escape closes the active search dialog, while native child dialogs retain their own close handling. See [Keyboard shortcuts](/docs/global-search/keyboard) for configurable back/previous/next bindings.

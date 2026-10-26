@@ -1,0 +1,168 @@
+---
+title: "Table shortcuts and selection"
+description: "Navigate native records, select one row or a page, open filters and recover eligible actions."
+icon: "table-2"
+---
+
+FLEX table shortcuts operate on the **rendered native Filament table**. They use
+its current rows, bulk-selection checkbox, record links, filters and pagination.
+They do not build a second table or fetch every record for keyboard navigation.
+
+## Default controls
+
+| Key | Action key | Behavior |
+| --- | --- | --- |
+| `J` | `row_next` | Highlight the next rendered record. |
+| `K` | `row_previous` | Highlight the previous rendered record. |
+| `O` | `row_open` | Activate the highlighted record's native link/action. |
+| `A` | `row_select` | Toggle the highlighted record's native checkbox. |
+| `Mod + A` | `page_select` | Select the current rendered page through its native bulk-page checkbox. |
+| `[` | `page_previous` | Activate native previous-page navigation. |
+| `]` | `page_next` | Activate native next-page navigation. |
+| `F` | `filters` | Open the current table's native filter dropdown/modal. |
+| `Mod + Z` | `undo` | Recover the latest eligible configured change, when recovery is enabled. |
+| `Mod + Shift + /` | `help` | Open keyboard help for the active context. |
+
+`Mod` is Command on macOS and Control on Windows/Linux. Defaults are not imposed
+over a saved or PHP-configured alternative; shortcut help shows the effective
+current bindings. Older `X` / `Shift + X` selection examples are not the current
+defaults.
+
+## A complete interaction
+
+1. Leave the search/input/editor field so the table can receive workspace keys.
+2. Press `J` to highlight the first record; press `J`/`K` to move the highlight.
+3. Press `A` to toggle that record's bulk selection.
+4. Press `Mod + A` to select the current page. Pressing it again keeps that page
+   selected; it does not toggle everything off or select the entire database.
+5. Use the table's native deselection control to clear selected records, or `A`
+   to toggle a highlighted row.
+6. Open the native bulk-action UI to perform an authorized action. If that action
+   has an enabled recovery profile, its resulting notice offers Undo.
+
+The highlight and bulk-selection state are different: moving the highlight does
+not implicitly select records. Navigation stops at the rendered row bounds;
+use pagination to visit another page. Your table must expose the relevant native
+checkbox/link/filter/pagination control for that shortcut to do anything.
+
+## Enable, disable or rebind table controls
+
+```php
+use Flex\Theme\FlexThemePlugin;
+use Flex\Theme\Keyboard\ShortcutConfiguration;
+
+FlexThemePlugin::make()->shortcuts(
+    ShortcutConfiguration::make()
+        ->tableNavigation(true)
+        ->bindings('row_next', 'j')
+        ->bindings('row_previous', 'k')
+        ->bindings('row_select', 'a')
+        ->bindings('page_select', 'mod+a')
+        ->bindings('row_open', ['o', 'mod+enter']),
+);
+```
+
+An array registers up to four alternatives. This example adds Mod + Enter as an alternative. On a focused native button/link,
+plain Enter retains its ordinary activation.
+PHP bindings are authoritative and locked in the editor. Use `null` to disable
+an action, or disable the whole table enhancement:
+
+```php
+ShortcutConfiguration::make()->bindings('page_select', null);
+ShortcutConfiguration::make()->tableNavigation(false);
+```
+
+The second call removes table enhancements and table recorders without disabling
+independent search, workspace commands or recovery. Bindings must be unique
+across configured actions, including physical Command/Control aliases. Escape
+and Tab retain native behavior and cannot be assigned as replacement shortcuts.
+
+## Keep native action behavior
+
+Configure the table normally. For example, within a Resource's `table()` method:
+
+```php
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+
+return $table
+    ->columns([TextColumn::make('title')->searchable()->sortable()])
+    ->recordActions([EditAction::make(), DeleteAction::make()])
+    ->toolbarActions([DeleteBulkAction::make()]);
+```
+
+Your Resource still supplies its model, schema, filters, query scope and policies.
+FLEX does not add a destructive key that silently bypasses a confirmation dialog.
+For a custom native Action shortcut, use native `keyBindings()`:
+
+```php
+use Filament\Actions\Action;
+
+Action::make('export')
+    ->label('Export selected records')
+    ->keyBindings(['mod+shift+e'])
+    ->action(fn () => $this->exportSelectedRecords());
+```
+
+Implement and authorize `exportSelectedRecords()` in your application. Rendered
+native bindings take priority over extra workspace commands; FLEX includes their
+metadata in help without replacing native action execution.
+
+## Multiple tables and focus
+
+The table containing the current target/focus is preferred. Otherwise the last
+active visible table is used, or a single unambiguous visible table. In a page
+with multiple unrelated tables, focus/interact with the desired table first.
+Table-local row state does not leak to a different table.
+
+Text inputs, textareas, native selects, rich/code editors, shortcut recorders,
+active menus/popups and native dialogs keep their own key handling. IME,
+composition input and ordinary text Undo are preserved. In an input,
+`Mod + A` selects text and `Mod + Z` undoes typing; they do not select rows or
+recover a record.
+
+## Contextual help
+
+```js
+window.dispatchEvent(new CustomEvent('flex-keyboard-help', {
+  detail: { context: 'table' },
+}));
+```
+
+Use this event from a help affordance associated with the active table. Table
+help contains available table controls, native action bindings and recovery;
+global help additionally lists navigation sequences and custom commands.
+Native modal focus trapping, Escape and return focus still apply.
+
+## Undo is opt-in
+
+`Mod + Z` does not make arbitrary operations reversible. Enable a profile for
+supported models and columns first:
+
+```php
+use App\Models\Post;
+use Flex\Theme\Recovery\RecoveryConfiguration;
+use Flex\Theme\Recovery\RecoveryProfile;
+
+FlexThemePlugin::make()->recovery(
+    RecoveryConfiguration::make()
+        ->window(15)
+        ->profiles(
+            RecoveryProfile::make(Post::class)
+                ->fields(['title'])
+                ->operations(['edit', 'delete', 'restore']),
+        ),
+);
+```
+
+Here `Post` must use native `SoftDeletes` for delete/restore recovery. Native
+EditAction can restore its declared columns; native Delete/Restore and their bulk
+variants require soft-deleted models. Hard deletion, relation operations and
+custom business actions need an explicit adapter. Edits saved on an EditRecord
+page are not automatically captured by this Action integration.
+
+Read [Recovery](/docs/workspace/recovery) for inverse policies, conflict checks,
+batch limits, cache storage and expiration. Read
+[Keyboard controls](/docs/workspace/keyboard) for recording and all other commands.

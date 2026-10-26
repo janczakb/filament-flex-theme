@@ -1,0 +1,185 @@
+---
+title: "Field groups"
+description: "Group native settings rows with labels and descriptions on the left and controls on the right."
+icon: "rows-3"
+---
+
+`Flex\Theme\Schemas\Components\FieldGroup` is a themed native Filament `Section`.
+It arranges settings as separate rows: label and description on the left,
+control on the right. On narrow containers, controls stack under the label.
+It is **not** the separate FLEX Fields package's database-backed field-group
+model or schema registry.
+
+## One switch and one select
+
+```php
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Flex\Theme\Schemas\Components\FieldGroup;
+
+FieldGroup::make('Pull Requests')
+    ->key('pull-request-preferences')
+    ->schema([
+        Toggle::make('review_enabled')
+            ->label('Review requests')
+            ->belowLabel('Request a review before changes go live.'),
+        Select::make('review_provider')
+            ->label('Review provider')
+            ->belowLabel('Choose where your team reviews changes.')
+            ->options(['github' => 'GitHub', 'gitlab' => 'GitLab'])
+            ->native(false),
+    ]);
+```
+
+These are two separate settings rows. `belowLabel()` places explanatory text
+beside the control with the label. A field's ordinary helper text retains its
+native helper position; it is not automatically moved into the label column.
+
+## Defaults and configuration
+
+| Native Section setting | FieldGroup default |
+| --- | --- |
+| `contained(false)` | No extra outer contained card; the themed rows provide their surface. |
+| `columns(1)` | One setting per row. |
+| `columnSpanFull()` | Span the parent grid. |
+| `inlineLabel()` | Labels beside controls when there is enough space. |
+| Extra attributes | Preserve native attributes and add `ft-field-group`. |
+
+There is no separate row builder or custom persistence API. Configure the
+ordinary child fields and inherited Section methods. The group uses theme
+surface, text, line, typography and radius tokens. It adapts below a **480 px
+container width**, including when placed in a narrow column inside a wide screen.
+Text controls use a 202 px desktop width by default; switches/selects/radio rows
+can use their natural width within the same bound. Narrow controls become full
+width when stacked.
+
+## Several groups in one section
+
+```php
+use Filament\Schemas\Components\Section;
+
+Section::make('Workspace preferences')->schema([
+    FieldGroup::make('Review')->key('review')->schema([
+        Toggle::make('require_review')->label('Require review')
+            ->belowLabel('Keep changes in review until approved.'),
+        Select::make('provider')->options(['github' => 'GitHub', 'gitlab' => 'GitLab'])
+            ->native(false),
+    ]),
+    FieldGroup::make('Notifications')->key('notifications')->schema([
+        Toggle::make('notify_launch')->label('Launch notifications'),
+        Toggle::make('weekly_digest')->label('Weekly digest'),
+    ]),
+]);
+```
+
+Give groups stable keys when nesting them in deferred tabs, wizard steps or
+action schemas. The native parent continues to own visibility and lifecycle.
+
+## Text and radio fields
+
+```php
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\TextInput;
+
+FieldGroup::make('Profile')->schema([
+    TextInput::make('display_name')->required()->maxLength(120)
+        ->belowLabel('The name your teammates see.'),
+    Radio::make('visibility')->inline()
+        ->options(['private' => 'Private', 'team' => 'Team'])
+        ->belowLabel('Choose who can see your profile.'),
+]);
+```
+
+Validation, disabled/read-only states, options, relationships and model binding
+remain the child's normal Filament behavior. Adding a group does not create
+database columns, casts, policies or a save action.
+
+## Reactive dependencies
+
+```php
+use Filament\Schemas\Components\Utilities\Get;
+
+FieldGroup::make('Delivery')->schema([
+    Toggle::make('email_enabled')->live(),
+    TextInput::make('delivery_email')->email()
+        ->visible(fn (Get $get): bool => (bool) $get('email_enabled'))
+        ->required(fn (Get $get): bool => (bool) $get('email_enabled')),
+]);
+```
+
+Hidden fields follow their native dehydration/validation rules. Do not use
+visibility as authorization. For sensitive settings authorize the page/action
+and its server write independently.
+
+## Nested state
+
+```php
+FieldGroup::make('Preferences')
+    ->statePath('preferences')
+    ->schema([
+        Toggle::make('tracking')->default(true),
+        Select::make('digest')->options(['daily' => 'Daily', 'weekly' => 'Weekly'])
+            ->native(false),
+    ]);
+```
+
+The resulting form state is under `preferences.tracking` and
+`preferences.digest`. Your application must persist that structure, for example
+with an appropriate JSON column/cast, or map it in its own save handler. This
+does not activate the FLEX Fields managed-schema system.
+
+## Actions, collapse and native overrides
+
+Inherited `description()`, `icon()`, `headerActions()`, `footerActions()`,
+`collapsible()`, `collapsed()`, `persistCollapsed()`, `visible()`, `hidden()`,
+`disabled()`, `statePath()`, `columns()`, `columnSpan()` and `inlineLabel()` remain
+native Section configuration. Persisted collapse state needs a stable native
+component identity. The one-column inline-label arrangement is the intended
+FieldGroup design; use a native Grid **around multiple groups** for multi-column
+settings instead of turning an individual row group into an unrelated layout.
+
+```php
+FieldGroup::make('Optional preferences')
+    ->key('optional-preferences')
+    ->collapsible()
+    ->collapsed()
+    ->schema([Toggle::make('digest_enabled')]);
+```
+
+To make a specific field span its row with a label above, set that native child
+field's `inlineLabel(false)`. To adjust the established control-width token on
+one group, use its existing scoped CSS variable:
+
+```php
+FieldGroup::make('Account')
+    ->extraAttributes(['style' => '--ft-field-group-control-width: 280px;'])
+    ->schema([TextInput::make('email')->email()]);
+```
+
+This changes only that group's control bound. It does not require overriding
+bare `input`/`section` elements or altering other native components.
+
+## In a wizard or action
+
+Use `FieldGroup` directly in a native wizard Step or Action schema:
+
+```php
+use Filament\Actions\Action;
+use Flex\Theme\Actions\Drawer;
+use Flex\Theme\Enums\DrawerPosition;
+
+Drawer::position(
+    Action::make('reviewPreferences')->schema([
+        FieldGroup::make('Publishing')->key('publishing')->schema([
+            Toggle::make('approval')->label('Team approval'),
+            Select::make('status')->options(['draft' => 'Draft', 'review' => 'Review'])
+                ->native(false),
+        ]),
+    ]),
+    DrawerPosition::Bottom,
+);
+```
+
+The form remains owned by its parent Action. Closing, reopening, deferred
+rendering and validation follow native Filament behavior; the group adds no
+second state store or independent JavaScript controller.

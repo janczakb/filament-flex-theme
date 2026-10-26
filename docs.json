@@ -1,0 +1,205 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "FLEX Theme",
+  "description": "FLEX Theme for Filament 5: a visual theme editor, Global Search, keyboard shortcuts, announcements and floating panels.",
+  "colors": {
+    "primary": "#5B49D6",
+    "light": "#A89AFF",
+    "dark": "#4935B5"
+  },
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
+  "fonts": {
+    "family": "Inter",
+    "heading": {
+      "family": "Inter",
+      "weight": 600
+    }
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "logo": {
+    "light": "/docs/assets/logo-light.svg",
+    "dark": "/docs/assets/logo-dark.svg",
+    "href": "/docs/index"
+  },
+  "favicon": "/docs/assets/flex-mark.svg",
+  "background": {
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#101018"
+    }
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": {
+      "theme": {
+        "light": "github-light",
+        "dark": "github-dark"
+      }
+    },
+    "latex": false
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Home",
+        "pages": [
+          "docs/index"
+        ]
+      },
+      {
+        "tab": "Theme Settings",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "docs/theme-settings/overview",
+              "docs/theme-settings/configuration",
+              "docs/theme-settings/panels-permissions"
+            ]
+          },
+          {
+            "group": "Design your panel",
+            "pages": [
+              "docs/theme-settings/appearance",
+              "docs/theme-settings/colors",
+              "docs/theme-settings/brand",
+              "docs/theme-settings/layout",
+              "docs/theme-settings/details"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "docs/theme-settings/reference"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Global Search",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "docs/global-search/overview",
+              "docs/global-search/quickstart",
+              "docs/global-search/configuration"
+            ]
+          },
+          {
+            "group": "Discover and act",
+            "pages": [
+              "docs/global-search/resources",
+              "docs/global-search/pages-navigation",
+              "docs/global-search/permissions",
+              "docs/global-search/actions",
+              "docs/global-search/commands"
+            ]
+          },
+          {
+            "group": "Extend search",
+            "pages": [
+              "docs/global-search/sources",
+              "docs/global-search/context-navigation",
+              "docs/global-search/panels-tenants",
+              "docs/global-search/media",
+              "docs/global-search/history-favorites"
+            ]
+          },
+          {
+            "group": "Customize and operate",
+            "pages": [
+              "docs/global-search/keyboard",
+              "docs/global-search/appearance",
+              "docs/global-search/performance",
+              "docs/global-search/recipes",
+              "docs/global-search/reference"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Announcements",
+        "groups": [
+          {
+            "group": "Announcements",
+            "pages": [
+              "docs/announcements/overview",
+              "docs/announcements/configuration",
+              "docs/announcements/live-updates",
+              "docs/announcements/recipes",
+              "docs/announcements/reference"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Components",
+        "groups": [
+          {
+            "group": "Forms and overlays",
+            "pages": [
+              "docs/components/field-groups",
+              "docs/components/bottom-sheet"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Keyboard & Tables",
+        "groups": [
+          {
+            "group": "Controls and recovery",
+            "pages": [
+              "docs/workspace/keyboard",
+              "docs/workspace/table-shortcuts",
+              "docs/workspace/recovery"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/janczakb/filament-flex-theme"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Buy now",
+      "href": "https://shop.bjanczak.com/checkout/custom/88ee2f3a-e341-43d7-8b29-e47f0ca14862?signature=d472210ffbf92bd7ba06aea2a027192261775c6edad56b3d2594b8f29360f0d1"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/janczakb/filament-flex-theme"
+    }
+  },
+  "seo": {
+    "indexing": "navigable",
+    "trailingSlash": false,
+    "metatags": {
+      "og:site_name": "FLEX Theme",
+      "og:locale": "en_US",
+      "canonical": "https://flex-theme.bjanczak.com"
+    },
+    "organization": {
+      "name": "FLEX Theme",
+      "url": "https://flex-theme.bjanczak.com/"
+    }
+  },
+  "integrations": {
+    "ga4": {
+      "measurementId": "G-DXL95NDK97"
+    }
+  }
+}

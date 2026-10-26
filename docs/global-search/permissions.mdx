@@ -1,0 +1,75 @@
+---
+title: "Permissions"
+description: "Apply access rules before discovery, querying and action execution."
+icon: "shield-check"
+---
+
+Visibility follows application authorization. Hiding a category is useful presentation control; model and action policies still decide what a user may read or change.
+
+## Gate the whole feature
+
+```php
+use Filament\Panel;
+use Flex\Theme\Contracts\CanUseFlexSearch;
+
+class User extends Authenticatable implements CanUseFlexSearch
+{
+    public function canUseFlexSearch(Panel $panel): bool
+    {
+        return $this->is_active && $this->can('use-workspace-search');
+    }
+}
+```
+
+Keep any interfaces your User model already implements, such as Filament's `FilamentUser` and `HasTenants`. The method name is `canUseFlexSearch`, not a method from another search plugin.
+
+Or configure the feature gate directly:
+
+```php
+SearchConfiguration::make()->authorize(
+    fn ($user, Panel $panel): bool => $user->is_active
+);
+```
+
+Both the model gate and configured gate apply when present. Native panel access is still required.
+
+## Gate a resource or page
+
+```php
+use Flex\Theme\Contracts\SearchableInFlex;
+
+class CustomerResource extends Resource implements SearchableInFlex
+{
+    public static function canUseFlexSearch(): bool
+    {
+        return \Filament\Facades\Filament::auth()->user()->can('search-customers');
+    }
+}
+```
+
+The same additional interface is available for a registered Page. It does not replace `canAccess()` on pages, `canGloballySearch()` / `canViewAny()` on resources or record policies.
+
+## Source and command gates
+
+```php
+NativeResourceSource::make(CustomerResource::class)
+    ->authorize(fn ($user): bool => $user->can('search-customers'));
+
+SearchCommand::make('open-billing', 'Open billing')
+    ->authorize(fn ($user): bool => $user->can('view-billing'))
+    ->action(Action::make('billing')->url('/billing'));
+```
+
+Custom sources must scope the data they return. `CallbackSearchSource::authorize()` is a feature gate; it cannot infer tenant constraints for an arbitrary external service or custom SQL query.
+
+## Action execution
+
+Native resource actions re-resolve the selected record and recheck authorization on the server. Native Edit/Delete confirmation, form validation and transaction behavior remain in Filament. A visible action is not a permanent authorization grant.
+
+Cross-panel actions execute at their authorized destination. A short-lived handoff is checked against the current user, guard, panel and tenant before the native action is mounted.
+
+## Safe caching
+
+Do not cache permission-filtered results globally. Include user, panel, tenant, locale, query and filters in any application-managed result cache and invalidate it when permissions or records change. FLEX's default query/source snapshots are request-local; they are not a shared search-result cache.
+
+A custom Filament provider owns its authorization. Configure that provider explicitly; FLEX cannot make an unsafe custom provider safe by changing its window.
