@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://shop.bjanczak.com/checkout/custom/88ee2f3a-e341-43d7-8b29-e47f0ca14862?signature=d472210ffbf92bd7ba06aea2a027192261775c6edad56b3d2594b8f29360f0d1"><img src="docs/assets/readme/buy-now.svg" width="138" height="46" alt="Buy FLEX Theme"></a>&nbsp;
+  <a href="https://shop.bjanczak.com/checkout/buy/2fa1e181-74d4-4889-994c-d066dcfc88b3"><img src="docs/assets/readme/buy-now.svg" width="138" height="46" alt="Buy FLEX Theme"></a>&nbsp;
   <a href="https://flex-theme.bjanczak.com/docs/theme-settings/overview"><img src="docs/assets/readme/documentation.svg" width="160" height="46" alt="Read the documentation"></a>
 </p>
 
@@ -224,7 +224,7 @@ Both plans include the complete FLEX Theme package. Keep using the versions cove
 
 Unlimited is not a reseller license for independently owned client applications. Those applications need their owner's license. The checkout lists current prices, taxes and the selected variant. The binding terms are in [LICENSE](LICENSE); [COMMERCIAL.md](COMMERCIAL.md) explains domain allowances, client projects and update rights.
 
-[**Buy FLEX Theme →**](https://shop.bjanczak.com/checkout/custom/88ee2f3a-e341-43d7-8b29-e47f0ca14862?signature=d472210ffbf92bd7ba06aea2a027192261775c6edad56b3d2594b8f29360f0d1)
+[**Buy FLEX Theme →**](https://shop.bjanczak.com/checkout/buy/2fa1e181-74d4-4889-994c-d066dcfc88b3)
 
 ## Documentation and support
 

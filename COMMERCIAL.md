@@ -18,7 +18,7 @@ The binding terms are in [LICENSE](LICENSE), version **1.0**, effective **20 Oct
 | Sharing keys or redistributing the package | Not permitted | Not permitted |
 | Independently owned client applications or affiliated companies | Their own license required | Their own license required |
 
-Use the [official checkout](https://shop.bjanczak.com/checkout/custom/88ee2f3a-e341-43d7-8b29-e47f0ca14862?signature=d472210ffbf92bd7ba06aea2a027192261775c6edad56b3d2594b8f29360f0d1) to select a variant and see the current price. Purchases are one-time; there is no automatic recurring charge under these standard variants. Both variants generate a Lemon Squeezy license key. You do not need to register for a separate license-portal account.
+Use the [official checkout](https://shop.bjanczak.com/checkout/buy/2fa1e181-74d4-4889-994c-d066dcfc88b3) to select a variant and see the current price. Purchases are one-time; there is no automatic recurring charge under these standard variants. Both variants generate a Lemon Squeezy license key. You do not need to register for a separate license-portal account.
 
 ## What is one domain?
 
