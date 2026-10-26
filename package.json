@@ -1,0 +1,18 @@
+{
+  "name": "@flex/theme-runtime",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "docs:dev": "npx mintlify dev",
+    "docs:validate": "npx mintlify validate",
+    "docs:links": "npx mintlify broken-links"
+  },
+  "dependencies": {
+    "@tanstack/virtual-core": "3.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
