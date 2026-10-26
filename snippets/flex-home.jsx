@@ -149,6 +149,7 @@ export const FlexHome = () => {
   };
 
   return <main id="flex-home" className="fl-home not-prose" ref={root}>
+    {laptop3dEnabled && <link rel="preload" href={(typeof window !== 'undefined' && ['localhost','127.0.0.1'].includes(window.location.hostname)) ? '/docs/assets/laptop/macbook-air-web.glb.txt' : '/docs/assets/laptop/macbook-air-web-3ed3ede8716f.gltf.json'} as="fetch" crossOrigin="anonymous"/>}
     <script id="fl-product-schema" type="application/ld+json">{JSON.stringify(productSchema).replace(/</g,'\\u003c')}</script>
     <a href="#fl-main" className="fl-skip">Skip to content</a>
     <nav className="fl-nav" aria-label="FLEX Theme">
